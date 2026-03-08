@@ -10,7 +10,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 3
+**Last updated:** March 2026 — Session 4
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -72,6 +72,7 @@ async with client.connect() as session:
 ### What You Need First
 
 Already in place:
+- `docker-compose.yml` ✅ — **Session 4 delivered.** Run `make dev-up` to start Redis + Postgres + MinIO locally. Your voice gateway can now write `AGENT_UPDATE` events to Redis and have Sariya's WS relay pick them up without needing AWS.
 - `models/sonic_client.py` ✅ — `SonicClient`, `SonicSession`, `SonicEvent`
 - `models/sonic_tools.py` ✅ — `SONIC_TOOLS` (inject into `session.configure(tools=...)`)
 - `models/lite_client.py` ✅ — `LiteClient.plan_tasks()` for task decomposition

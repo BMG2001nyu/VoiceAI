@@ -9,7 +9,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 3
+**Last updated:** March 2026 — Session 4
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -38,6 +38,7 @@ Your first four tasks (2.1–2.4 infra + 4.2 Mission API) directly unblock:
 ### What You Need First
 
 Already in place (no waiting required):
+- `docker-compose.yml` ✅ — **Session 4 delivered.** Run `make dev-up` to get Redis 7, Postgres 16, and MinIO all healthy locally. `infra/init.sql` creates the full `missions`, `tasks`, `evidence` schema automatically on first boot. You can start Tasks 4.1–4.3 against local Postgres/Redis without needing AWS infra.
 - `models/lite_client.py` ✅ — `LiteClient.plan_tasks()` and `plan_next_actions()` are live and tested. Import directly into your `task_planner.py` (Task 4.4 integration):
   ```python
   from models.lite_client import LiteClient
@@ -50,7 +51,7 @@ Already in place (no waiting required):
 - `backend/pyproject.toml` — all Python deps already pinned including `asyncpg`, `redis[hiredis]`, `boto3`, `sqlalchemy[asyncio]`, `openai`, `websockets`
 - `backend/main.py` — FastAPI app ready to mount your routers
 
-**Your immediate next step:** set up the CDK/Terraform project in `infra/` and deploy Tasks 2.1–2.4 so the rest of the team can connect to real services.
+**Your immediate next step (Session 5):** Task 4.2 — `POST /missions` CRUD API. Local Postgres is now running via Docker Compose — you can build and test 4.1 (state machine) and 4.2 (CRUD API) right now without any AWS account. This is the single biggest unlocker for the whole team. Once `POST /missions` is live, Chinmay's voice gateway `start_mission` tool handler works end-to-end.
 
 ---
 

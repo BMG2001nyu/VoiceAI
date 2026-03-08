@@ -9,12 +9,15 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Nova API (api.nova.amazon.com — OpenAI-compatible)
+    # Nova API (api.nova.amazon.com — OpenAI-compatible dev path)
     nova_api_key: str = ""
 
     # AWS
     aws_region: str = "us-east-1"
     aws_profile: str = "default"
+    # Bearer token for boto3 Bedrock calls (production path — enables console visibility).
+    # When set, model clients should use boto3 instead of the Nova API.
+    aws_bearer_token_bedrock: str = ""
 
     # Bedrock models
     bedrock_model_sonic: str = "amazon.nova-sonic-v1:0"
@@ -35,6 +38,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     demo_mode: bool = False
     api_key: str = "changeme"
+    agent_pool_size: int = 6
+    backend_url: str = "http://localhost:8000"
 
 
 settings = Settings()

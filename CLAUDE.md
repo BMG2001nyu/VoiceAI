@@ -15,7 +15,7 @@ This file is the single source of truth for getting your local environment runni
 | Monorepo scaffold | ✅ Done | All dirs, `.gitignore`, `README.md` |
 | Backend deps | ✅ Done | `backend/pyproject.toml` (13 runtime deps + dev extras) |
 | Frontend deps | ✅ Done | `frontend/package.json`, `package-lock.json`, `tsconfig.json` |
-| Env config | ✅ Done | `.env.example` (14 vars incl. `NOVA_API_KEY`), `docs/ENV.md`, `backend/config.py` |
+| Env config | ✅ Done | `.env.example` (17 vars incl. `NOVA_API_KEY`, `AGENT_POOL_SIZE`, `BACKEND_URL`), `docs/ENV.md`, `backend/config.py` |
 | CI pipeline | ✅ Done | `.github/workflows/ci.yml` (4 parallel jobs, green) |
 | Backend health endpoint | ✅ Done | `GET /health → {"status": "ok"}` in `backend/main.py` |
 | Backend smoke test | ✅ Done | `backend/tests/test_smoke.py` — passing |
@@ -26,7 +26,8 @@ This file is the single source of truth for getting your local environment runni
 | Nova Sonic client | ✅ Done | `models/sonic_client.py` — real-time WebSocket voice client, smoke-tested live |
 | Sonic tool schemas | ✅ Done | `models/sonic_tools.py` — 5 tools in Nova Realtime + Bedrock formats |
 | Nova Lite client | ✅ Done | `models/lite_client.py` — chat, streaming, plan_tasks, plan_next_actions, smoke-tested live |
-| AWS Infra | ⏳ Pending | Manav — Tasks 2.1–2.7 |
+| Docker Compose | ✅ Done | `docker-compose.yml`, `infra/init.sql`, `Makefile` — Redis + Postgres + MinIO |
+| AWS Infra | ⏳ Pending | Manav — Tasks 2.1–2.6 |
 | Voice Gateway FastAPI | ⏳ Pending | Chinmay — Task 3.3 (3.1 & 3.2 are done) |
 | Mission Orchestrator | ⏳ Pending | Manav — Tasks 4.1–4.3, 4.5 (4.4 `lite_client` is done) |
 | Browser Agents | ⏳ Pending | Chinmay — Tasks 5.1–5.5 |
@@ -235,19 +236,17 @@ pytest tests/test_smoke.py -v
 
 ## Step 5 — Local Services (Docker Compose)
 
-> ⚠️ **Status: Pending** — `docker-compose.yml` has not been created yet (Bharath Task 2.7, blocked on Manav's schema). Check `team-tasks/bharath-gera.md` for current status before attempting this step. Skip to Step 6 if you only need the frontend UI.
-
-When available, this will start Redis, Postgres, and MinIO (local S3) so you can run the backend without an AWS account for most tasks.
+Starts Redis, Postgres, and MinIO (local S3) so you can run the backend without an AWS account for most tasks.
 
 ```bash
 # From the repo root
-docker compose up -d
+make dev-up          # docker compose up -d (shorthand)
 
 # Check all three are running
-docker compose ps
+make dev-status      # docker compose ps
 ```
 
-Expected output once the file exists:
+Expected output:
 
 ```
 NAME         STATUS          PORTS
@@ -462,7 +461,8 @@ VoiceAI/
 ├── tasks.md                    ✅ Full system engineering plan (with progress tracker)
 ├── CLAUDE.md                   ✅ This file
 ├── .env.example                ✅ 14 placeholder env vars (incl. NOVA_API_KEY)
-├── docker-compose.yml          ⏳ Pending (Bharath Task 2.7)
+├── docker-compose.yml          ✅ Redis 7 + Postgres 16 + MinIO + bucket init
+├── Makefile                    ✅ dev-up/down/logs/reset/status + backend/frontend helpers
 │
 ├── team-tasks/                 ✅ All task files updated with current status
 │   ├── bharath-gera.md         ✅ 4/12 tasks done
@@ -534,7 +534,7 @@ VoiceAI/
 │
 ├── infra/
 │   ├── cdk/                    ✅ directory exists (Manav to populate)
-│   └── init.sql                ⏳ Pending (Bharath Task 2.7)
+│   └── init.sql                ✅ missions + tasks + evidence tables, enums, indexes
 │
 ├── demo/                       ⏳ Pending (Bharath Tasks 14.x)
 │
@@ -598,7 +598,7 @@ These are the cross-team touchpoints most likely to cause merge conflicts or blo
 | ~~`models/lite_client.py` exists~~ | ~~Manav~~ ✅ **Done** | Chinmay (task decomposition, Task 10.1), Rahil (theme labeller, Task 7.4) |
 | ~~`models/sonic_client.py` + `sonic_tools.py` exist~~ | ~~Chinmay~~ ✅ **Done** | Chinmay can now build Task 3.3 (Voice Gateway) |
 | `models/embedding_client.py` exists + dimension constant exported | Rahil | Manav (OpenSearch index dimension, Task 2.5) |
-| Docker Compose up (`docker-compose.yml` created — Task 2.7) | Bharath | Everyone needing local Redis/Postgres |
+| ~~Docker Compose up (`docker-compose.yml` created — Task 2.7)~~ | ~~Bharath~~ ✅ **Done** | Everyone can now run Redis + Postgres + MinIO locally |
 
 **Communication**: when you start a task that another person depends on, drop a note in the team chat with the expected interface (endpoint path, function signature, or message format) so they can build against it while you implement.
 
@@ -653,4 +653,4 @@ The request body does not match `EvidenceIngest` schema. Check required fields: 
 
 *Last updated: March 2026 — Session 4. Questions? Ask Bharath or drop a message in the team chat.*
 
-**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live and smoke-tested: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅. Session 4 priorities: (1) **Chinmay** — Task 3.3 Voice Gateway (Sonic client ready, can start now); (2) **Manav** — Tasks 2.1–2.4 AWS infra (biggest unlocker); (3) **Rahil** — Task 7.1 `embedding_client.py` (no infra dep, start now); (4) **Bharath** — Task 2.7 `docker-compose.yml` (unblocks local dev). See `tasks.md` → Implementation Progress for the full tracker.
+**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live and smoke-tested: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅. Docker Compose live ✅ (`make dev-up` → Redis + Postgres + MinIO all healthy, full schema loaded). **15/68 tasks done (22%).** Session 5 priorities: (1) **Manav** — Task 4.2 Mission CRUD API (`POST /missions`) — biggest unlocker for the whole team; (2) **Chinmay** — Task 3.3 Voice Gateway (`/ws/voice`); (3) **Rahil** — Task 7.1 `embedding_client.py` (no deps, start now); (4) **Bharath** — Task 13.1 Structured Logging or Task 14.4 Architecture Diagram. See `tasks.md` → Implementation Progress for the full tracker.

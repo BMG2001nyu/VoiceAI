@@ -1,14 +1,8 @@
 # ── AWS ───────────────────────────────────────────────────────────────────────
 AWS_REGION=us-east-1
 AWS_PROFILE=default
-# Bearer token for direct Bedrock API calls (boto3 path — production/console visibility).
-# Get from: AWS Console → IAM → Security credentials → Create access key, OR
-# use temporary STS token. Required when migrating away from Nova API.
-AWS_BEARER_TOKEN_BEDROCK=
 
 # ── Nova API (api.nova.amazon.com — OpenAI-compatible REST + WebSocket) ────────
-# Used by lite_client.py and sonic_client.py for dev. No IAM needed.
-# Migrate to boto3 (Bedrock SDK) for production console visibility.
 # Get your key at https://api.nova.amazon.com → API Keys
 NOVA_API_KEY=
 
