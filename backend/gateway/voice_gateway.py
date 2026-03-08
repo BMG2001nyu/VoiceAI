@@ -227,7 +227,9 @@ async def ws_voice(websocket: WebSocket) -> None:
                             await session.interrupt()
                             logger.info("Voice gateway: barge-in interrupt received")
                     except (json.JSONDecodeError, Exception) as exc:
-                        logger.warning("browser_to_sonic: unhandled text frame: %s", exc)
+                        logger.warning(
+                            "browser_to_sonic: unhandled text frame: %s", exc
+                        )
         except (WebSocketDisconnect, Exception):
             pass
 
@@ -246,7 +248,9 @@ async def ws_voice(websocket: WebSocket) -> None:
                 if event.error:
                     logger.error("Sonic error: %s", event.error)
                     with contextlib.suppress(Exception):
-                        await websocket.send_json({"type": "ERROR", "detail": event.error})
+                        await websocket.send_json(
+                            {"type": "ERROR", "detail": event.error}
+                        )
                     return  # Fatal — exit the task on error
 
                 elif event.audio_delta:
@@ -270,7 +274,10 @@ async def ws_voice(websocket: WebSocket) -> None:
                     if mission_id:
                         with contextlib.suppress(Exception):
                             await publish(
-                                redis, mission_id, "VOICE_TRANSCRIPT", transcript_payload
+                                redis,
+                                mission_id,
+                                "VOICE_TRANSCRIPT",
+                                transcript_payload,
                             )
 
                 elif event.user_transcript:
@@ -297,7 +304,9 @@ async def ws_voice(websocket: WebSocket) -> None:
                         logger.error("Tool handler error (%s): %s", tool_name, exc)
                         result = {"error": str(exc)}
                     with contextlib.suppress(Exception):
-                        await session.submit_tool_result(event.tool_call["call_id"], result)
+                        await session.submit_tool_result(
+                            event.tool_call["call_id"], result
+                        )
                         # Explicitly trigger Sonic's next response after tool result.
                         # The Nova Realtime API does not auto-generate after function_call_output.
                         await session.trigger_response()

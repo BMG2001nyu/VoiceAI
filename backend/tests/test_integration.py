@@ -26,7 +26,6 @@ from fastapi.testclient import TestClient
 
 from main import app
 
-
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
@@ -156,9 +155,19 @@ async def test_create_mission():
     app.state.db = pool
     app.state.redis = redis
 
-    mock_tasks = [{"description": "task1", "agent_type": "NEWS_BLOG", "priority": 5, "dependencies": []}]
+    mock_tasks = [
+        {
+            "description": "task1",
+            "agent_type": "NEWS_BLOG",
+            "priority": 5,
+            "dependencies": [],
+        }
+    ]
 
-    with patch("models.lite_client.LiteClient.plan_tasks", new=AsyncMock(return_value=mock_tasks)):
+    with patch(
+        "models.lite_client.LiteClient.plan_tasks",
+        new=AsyncMock(return_value=mock_tasks),
+    ):
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -216,15 +225,15 @@ async def test_get_mission_not_found():
 @pytest.mark.parametrize(
     "from_status,to_status,expected_code",
     [
-        ("PENDING",     "ACTIVE",       200),  # valid
-        ("ACTIVE",      "SYNTHESIZING", 200),  # valid
-        ("SYNTHESIZING","COMPLETE",     200),  # valid
-        ("ACTIVE",      "FAILED",       200),  # valid (any → FAILED)
+        ("PENDING", "ACTIVE", 200),  # valid
+        ("ACTIVE", "SYNTHESIZING", 200),  # valid
+        ("SYNTHESIZING", "COMPLETE", 200),  # valid
+        ("ACTIVE", "FAILED", 200),  # valid (any → FAILED)
         # Invalid / backwards
-        ("COMPLETE",    "PENDING",      409),
-        ("COMPLETE",    "ACTIVE",       409),
-        ("FAILED",      "ACTIVE",       409),
-        ("ACTIVE",      "PENDING",      409),
+        ("COMPLETE", "PENDING", 409),
+        ("COMPLETE", "ACTIVE", 409),
+        ("FAILED", "ACTIVE", 409),
+        ("ACTIVE", "PENDING", 409),
     ],
 )
 async def test_patch_state_transitions(from_status, to_status, expected_code):
@@ -346,7 +355,9 @@ async def test_evidence_found_redis_payload_has_created_at():
     assert msg["type"] == "EVIDENCE_FOUND"
     event_payload = msg["payload"]
     # Bug 2: created_at must be present in the published payload
-    assert "created_at" in event_payload, "EVIDENCE_FOUND payload missing created_at alias"
+    assert (
+        "created_at" in event_payload
+    ), "EVIDENCE_FOUND payload missing created_at alias"
     assert event_payload["created_at"] == event_payload["timestamp"]
 
 
@@ -434,10 +445,11 @@ async def test_list_evidence_with_theme_filter():
 def test_ws_relay_connection_accepted():
     """WS relay accepts a connection and sends a PING keepalive within 30s.
 
-    Uses a synchronous TestClient (Starlette's WS test helper) with a fake Redis
-    pub/sub that immediately yields one real event then keeps the connection open.
+    Uses TestClient with a mock lifespan so no real DB/Redis is used (CI has no
+    Postgres). Fake Redis pub/sub yields one event then blocks until disconnect.
     """
     import threading
+    from contextlib import asynccontextmanager
 
     mission_id = str(uuid.uuid4())
     stop_event = threading.Event()
@@ -446,7 +458,6 @@ def test_ws_relay_connection_accepted():
         {"type": "EVIDENCE_FOUND", "payload": {"claim": "hello"}, "ts": 0}
     )
 
-    # FakePubSub yields our test_event immediately then blocks until disconnected.
     class FakePubSub:
         async def subscribe(self, ch):
             pass
@@ -458,9 +469,7 @@ def test_ws_relay_connection_accepted():
             pass
 
         async def listen(self):
-            # Yield the test event immediately
             yield {"type": "message", "data": test_event.encode()}
-            # Then block until the test is done (simulates an idle channel)
             while not stop_event.is_set():
                 await asyncio.sleep(0.05)
 
@@ -468,20 +477,25 @@ def test_ws_relay_connection_accepted():
         def pubsub(self):
             return FakePubSub()
 
-    app.state.redis = FakeRedis()
-    app.state.db = AsyncMock()
+    @asynccontextmanager
+    async def mock_lifespan(app):
+        app.state.db = AsyncMock()
+        app.state.redis = FakeRedis()
+        yield
 
-    with TestClient(app) as client:
-        with client.websocket_connect(f"/ws/mission/{mission_id}") as ws:
-            # Read the one event our fake pub/sub yields immediately.
-            msg = ws.receive_text()
-            parsed = json.loads(msg)
-            # May get our test event, or a PING if keepalive fires first.
-            # Accept either — the important thing is the connection is alive.
-            assert parsed.get("type") in ("EVIDENCE_FOUND", "PING")
-            if parsed.get("type") == "EVIDENCE_FOUND":
-                assert parsed["payload"]["claim"] == "hello"
-            stop_event.set()
+    original_lifespan = app.router.lifespan_context
+    app.router.lifespan_context = mock_lifespan
+    try:
+        with TestClient(app) as client:
+            with client.websocket_connect(f"/ws/mission/{mission_id}") as ws:
+                msg = ws.receive_text()
+                parsed = json.loads(msg)
+                assert parsed.get("type") in ("EVIDENCE_FOUND", "PING")
+                if parsed.get("type") == "EVIDENCE_FOUND":
+                    assert parsed["payload"]["claim"] == "hello"
+                stop_event.set()
+    finally:
+        app.router.lifespan_context = original_lifespan
 
 
 @pytest.mark.anyio

@@ -73,11 +73,11 @@ async def update_mission(
 ) -> MissionResponse:
     # Valid forward transitions — terminal states (COMPLETE, FAILED) are immutable.
     _VALID_TRANSITIONS: dict[str, set[str]] = {
-        "PENDING":     {"ACTIVE", "FAILED"},
-        "ACTIVE":      {"SYNTHESIZING", "FAILED"},
+        "PENDING": {"ACTIVE", "FAILED"},
+        "ACTIVE": {"SYNTHESIZING", "FAILED"},
         "SYNTHESIZING": {"COMPLETE", "FAILED"},
-        "COMPLETE":    set(),
-        "FAILED":      set(),
+        "COMPLETE": set(),
+        "FAILED": set(),
     }
     valid_statuses = set(_VALID_TRANSITIONS.keys())
     if body.status not in valid_statuses:
