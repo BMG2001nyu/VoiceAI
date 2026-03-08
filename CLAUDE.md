@@ -15,7 +15,7 @@ This file is the single source of truth for getting your local environment runni
 | Monorepo scaffold | ✅ Done | All dirs, `.gitignore`, `README.md` |
 | Backend deps | ✅ Done | `backend/pyproject.toml` (13 runtime deps + dev extras) |
 | Frontend deps | ✅ Done | `frontend/package.json`, `package-lock.json`, `tsconfig.json` |
-| Env config | ✅ Done | `.env.example` (14 vars incl. `NOVA_API_KEY`), `docs/ENV.md`, `backend/config.py` |
+| Env config | ✅ Done | `.env.example` (17 vars incl. `NOVA_API_KEY`, `AGENT_POOL_SIZE`, `BACKEND_URL`), `docs/ENV.md`, `backend/config.py` |
 | CI pipeline | ✅ Done | `.github/workflows/ci.yml` (4 parallel jobs, green) |
 | Backend health endpoint | ✅ Done | `GET /health → {"status": "ok"}` in `backend/main.py` |
 | Backend smoke test | ✅ Done | `backend/tests/test_smoke.py` — passing |
@@ -653,4 +653,4 @@ The request body does not match `EvidenceIngest` schema. Check required fields: 
 
 *Last updated: March 2026 — Session 4. Questions? Ask Bharath or drop a message in the team chat.*
 
-**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live and smoke-tested: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅. Session 4 priorities: (1) **Chinmay** — Task 3.3 Voice Gateway (Sonic client ready, can start now); (2) **Manav** — Tasks 2.1–2.4 AWS infra (biggest unlocker); (3) **Rahil** — Task 7.1 `embedding_client.py` (no infra dep, start now); (4) **Bharath** — Task 2.7 `docker-compose.yml` (unblocks local dev). See `tasks.md` → Implementation Progress for the full tracker.
+**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live and smoke-tested: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅. Docker Compose live ✅ (`make dev-up` → Redis + Postgres + MinIO all healthy, full schema loaded). **15/68 tasks done (22%).** Session 5 priorities: (1) **Manav** — Task 4.2 Mission CRUD API (`POST /missions`) — biggest unlocker for the whole team; (2) **Chinmay** — Task 3.3 Voice Gateway (`/ws/voice`); (3) **Rahil** — Task 7.1 `embedding_client.py` (no deps, start now); (4) **Bharath** — Task 13.1 Structured Logging or Task 14.4 Architecture Diagram. See `tasks.md` → Implementation Progress for the full tracker.

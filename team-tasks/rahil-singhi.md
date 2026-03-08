@@ -9,7 +9,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026
+**Last updated:** March 2026 — Session 4
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -30,6 +30,8 @@
 | 12.3 Spoken Briefing via Sonic | ⏳ Pending | Depends on Chinmay's gateway (3.3) and 12.2 |
 
 ### What You Need First
+
+- `docker-compose.yml` ✅ — **Session 4 delivered.** Run `make dev-up` to start Redis + Postgres + MinIO locally. The `evidence` table is already created by `infra/init.sql`. You can build and test Tasks 6.1–6.4 against local Postgres and MinIO without waiting for Manav's AWS infra. For `S3_BUCKET_EVIDENCE`, point to `http://localhost:9000` with `AWS_ACCESS_KEY_ID=minioadmin`.
 
 The TypeScript types for your evidence schema are already defined in `frontend/src/types/api.ts` — use these as the source of truth when writing your Pydantic models in `backend/evidence/schemas.py` so field names stay in sync with Sariya's UI.
 
