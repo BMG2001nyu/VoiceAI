@@ -53,9 +53,9 @@ NOVA_REALTIME_URL = "wss://api.nova.amazon.com/v1/realtime"
 DEFAULT_MODEL = "nova-2-sonic-v1"
 
 # Audio format expected by Nova Sonic
-SAMPLE_RATE = 24_000   # Hz
+SAMPLE_RATE = 24_000  # Hz
 CHANNELS = 1
-SAMPLE_WIDTH = 2       # bytes — 16-bit PCM
+SAMPLE_WIDTH = 2  # bytes — 16-bit PCM
 SILENCE_INTERVAL = 0.1  # seconds between keepalive silence bursts
 
 # Voices supported by Nova 2 Sonic
@@ -221,7 +221,9 @@ class SonicSession:
             max_output_tokens: Maximum tokens Sonic will generate per turn.
         """
         if voice not in AVAILABLE_VOICES:
-            logger.warning("Unknown voice %r — falling back to %r", voice, DEFAULT_VOICE)
+            logger.warning(
+                "Unknown voice %r — falling back to %r", voice, DEFAULT_VOICE
+            )
             voice = DEFAULT_VOICE
 
         session_payload: dict[str, Any] = {
@@ -250,8 +252,12 @@ class SonicSession:
                 json.dumps(ack)[:200],
             )
         else:
-            logger.debug("Session %s configured: voice=%s tools=%d",
-                         self.session_id, voice, len(tools or []))
+            logger.debug(
+                "Session %s configured: voice=%s tools=%d",
+                self.session_id,
+                voice,
+                len(tools or []),
+            )
 
     # ------------------------------------------------------------------
     # Input methods
@@ -266,10 +272,12 @@ class SonicSession:
         Args:
             pcm16_bytes: Raw PCM16 audio bytes to stream.
         """
-        await self._send({
-            "type": "input_audio_buffer.append",
-            "audio": base64.b64encode(pcm16_bytes).decode("utf-8"),
-        })
+        await self._send(
+            {
+                "type": "input_audio_buffer.append",
+                "audio": base64.b64encode(pcm16_bytes).decode("utf-8"),
+            }
+        )
 
     async def send_text(self, text: str) -> None:
         """Send a text message to Sonic instead of audio.
@@ -281,14 +289,16 @@ class SonicSession:
         Args:
             text: User message text to send.
         """
-        await self._send({
-            "type": "conversation.item.create",
-            "item": {
-                "type": "message",
-                "role": "user",
-                "content": [{"type": "input_text", "text": text}],
-            },
-        })
+        await self._send(
+            {
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": text}],
+                },
+            }
+        )
         logger.debug("Sent text message: %r", text[:80])
 
     async def submit_tool_result(self, call_id: str, result: Any) -> None:
@@ -304,14 +314,16 @@ class SonicSession:
         """
         if not isinstance(result, str):
             result = json.dumps(result)
-        await self._send({
-            "type": "conversation.item.create",
-            "item": {
-                "type": "function_call_output",
-                "call_id": call_id,
-                "output": result,
-            },
-        })
+        await self._send(
+            {
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "function_call_output",
+                    "call_id": call_id,
+                    "output": result,
+                },
+            }
+        )
         logger.debug("Submitted tool result for call_id=%s", call_id)
 
     async def interrupt(self) -> None:
@@ -353,10 +365,12 @@ class SonicSession:
         silence_b64 = base64.b64encode(silence_bytes).decode("utf-8")
         try:
             while True:
-                await self._send({
-                    "type": "input_audio_buffer.append",
-                    "audio": silence_b64,
-                })
+                await self._send(
+                    {
+                        "type": "input_audio_buffer.append",
+                        "audio": silence_b64,
+                    }
+                )
                 await asyncio.sleep(SILENCE_INTERVAL)
         except asyncio.CancelledError:
             pass
@@ -472,6 +486,7 @@ class SonicClient:
         if api_key is None:
             try:
                 from backend.config import settings  # type: ignore[import]
+
                 api_key = settings.nova_api_key or None
             except Exception:
                 pass
@@ -659,8 +674,9 @@ if __name__ == "__main__":
         print(f"  Received {len(audio_buffer):,} bytes of audio")
 
         assert len(audio_buffer) > 0, "Expected audio output bytes"
-        assert "SONIC_OK" in assistant_text.upper() or len(assistant_text) > 0, \
-            f"Unexpected transcript: {assistant_text!r}"
+        assert (
+            "SONIC_OK" in assistant_text.upper() or len(assistant_text) > 0
+        ), f"Unexpected transcript: {assistant_text!r}"
 
         # Save output audio for manual verification
         out_path = "nova_sonic_smoke.wav"

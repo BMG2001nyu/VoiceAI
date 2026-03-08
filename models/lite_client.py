@@ -362,7 +362,9 @@ class LiteClient:
             )
 
         tasks = _validate_task_nodes(raw)
-        logger.info("plan_tasks produced %d tasks for objective %r", len(tasks), objective[:60])
+        logger.info(
+            "plan_tasks produced %d tasks for objective %r", len(tasks), objective[:60]
+        )
         return tasks
 
     async def plan_next_actions(
@@ -482,7 +484,9 @@ class LiteClient:
     async def list_models(self) -> list[dict[str, Any]]:
         """Return available models from the Nova API."""
         models = await self._client.models.list()
-        return [{"id": m.id, "owned_by": getattr(m, "owned_by", "")} for m in models.data]
+        return [
+            {"id": m.id, "owned_by": getattr(m, "owned_by", "")} for m in models.data
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -529,7 +533,9 @@ if __name__ == "__main__":
         )
         print(f"  Produced {len(tasks)} tasks:")
         for t in tasks:
-            print(f"    [{t['agent_type']:15s}] p={t['priority']} — {t['description'][:60]}")
+            print(
+                f"    [{t['agent_type']:15s}] p={t['priority']} — {t['description'][:60]}"
+            )
         assert len(tasks) > 0, "Expected at least one task"
         print("  ✓ PASSED")
 
