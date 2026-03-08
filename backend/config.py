@@ -9,6 +9,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Nova API (api.nova.amazon.com — OpenAI-compatible)
+    nova_api_key: str = ""
+
     # AWS
     aws_region: str = "us-east-1"
     aws_profile: str = "default"
