@@ -17,7 +17,7 @@
 | 1.3 Environment Config | ✅ Done | `.env.example` (13 vars), `docs/ENV.md`, `backend/config.py` (Pydantic Settings) |
 | 1.4 CI Skeleton | ✅ Done | `.github/workflows/ci.yml`, `/health` endpoint, smoke tests passing |
 | 2.6 IAM + Secrets | ⏳ Pending | Needs Manav's AWS stack outputs (2.2–2.5) |
-| 2.7 Docker Compose | ⏳ Pending | Needs Manav's schema finalization |
+| 2.7 Docker Compose | ✅ Done | `docker-compose.yml`, `infra/init.sql`, `Makefile` |
 | 13.1 Structured Logging | ⏳ Pending | Needs Phase 4–6 in place |
 | 14.1 Demo Seed Script | ⏳ Pending | Needs Phase 4, 5, 10 |
 | 14.2 Mock Mode | ⏳ Pending | Needs Phase 5, 6, 8 |
@@ -31,7 +31,7 @@ All foundation tasks are done and verified. CI runs green. The backend serves `G
 
 ### Blocked On / Next Steps
 
-- **2.7 Docker Compose** — blocked on Manav confirming the `infra/init.sql` schema matches his RDS schema. Once confirmed: create `docker-compose.yml` and `infra/init.sql`.
+- **2.7 Docker Compose** ✅ Done — `docker-compose.yml` + `infra/init.sql` + `Makefile` delivered. Run `make dev-up` to start all services.
 - **13.1 Structured Logging** — add `backend/logging_config.py` once other services are being built so the context vars (`mission_id`, `agent_id`) have callers.
 - **14.x Demo tasks** — all require multiple other phases to be complete. Return to these once Phases 4–10 are done.
 - **2.6 IAM** — once Manav has ARNs from CDK outputs, create `docs/IAM.md` and the least-privilege policies.
@@ -53,7 +53,7 @@ As team lead you own the skeleton that every other engineer builds on top of, th
 | 1.3 | Project Init | Environment config strategy | 1.1 | ✅ Done |
 | 1.4 | Project Init | CI skeleton | 1.2 | ✅ Done |
 | 2.6 | Infrastructure | IAM roles + Secrets Manager | 2.2–2.5 | ⏳ Pending |
-| 2.7 | Infrastructure | Local dev Docker Compose | 1.3, 2.2–2.4 | ⏳ Pending |
+| 2.7 | Infrastructure | Local dev Docker Compose | 1.3, 2.2–2.4 | ✅ Done |
 | 13.1 | Observability | Structured JSON logging standard | Phase 4, 5, 6 | ⏳ Pending |
 | 14.1 | Demo | Seeded demo mission script | Phase 4, 5, 10 | ⏳ Pending |
 | 14.2 | Demo | Mock mode for offline demo | 5.4, 6.1, 8.x | ⏳ Pending |
@@ -61,7 +61,7 @@ As team lead you own the skeleton that every other engineer builds on top of, th
 | 14.4 | Demo | Architecture diagram export | — | ⏳ Pending |
 | 14.5 | Demo | Load test script | Phase 4, 12 | ⏳ Pending |
 
-**Total: 12 tasks — 4 Done, 8 Pending**
+**Total: 12 tasks — 5 Done, 7 Pending**
 
 ---
 

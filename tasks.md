@@ -12,7 +12,7 @@
 | Phase 1 — War Room UI | 8.1 Scaffold, 8.2 Layout, 8.3 Voice Panel, 8.4 Agent Grid, 8.5 Evidence Board, 8.6 Timeline | ✅ All Done | Sariya |
 | Phase 1 — Frontend State | 9.3 Zustand store + TypeScript types | ✅ Done | Sariya |
 | Phase 1 — WebSocket Hook | 8.7 WS hook (reconnection logic) | 🔄 Placeholder — needs live backend | Sariya |
-| Phase 2 — AWS Infra | 2.1–2.5 VPC/ECS/Redis/Postgres/S3/OpenSearch, 2.6 IAM, 2.7 Docker Compose | ⏳ Pending | Manav / Bharath |
+| Phase 2 — AWS Infra | 2.7 Docker Compose ✅, 2.1–2.5 VPC/ECS/Redis/Postgres/S3/OpenSearch, 2.6 IAM | 🔄 1/7 Done | Manav / Bharath |
 | Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway, 3.4 VAD, 3.5 barge-in | 🔄 2/5 Done | Chinmay |
 | Phase 4 — Orchestrator | 4.4 Nova Lite client ✅, 4.1 State machine, 4.2 CRUD API, 4.3 context builder, 4.5 planning loop | 🔄 1/5 Done | Manav |
 | Phase 5 — Browser Agents | 5.1–5.5 Session manager, pool, prompts, evidence emission, lifecycle | ⏳ Pending | Chinmay |
@@ -66,7 +66,10 @@ frontend/
       VoicePanel.tsx          Mic toggle, 60fps waveform, transcript feed
 
 .github/workflows/ci.yml     4 parallel jobs (lint + test for backend + frontend)
-.env.example                 14 placeholder env vars (incl. NOVA_API_KEY)
+.env.example                 17 placeholder env vars (incl. NOVA_API_KEY, AGENT_POOL_SIZE, BACKEND_URL)
+Makefile                     dev-up / dev-down / dev-logs / dev-reset / psql / redis-cli targets
+docker-compose.yml           Redis 7 + Postgres 16 + MinIO + minio-init bucket creation
+infra/init.sql               missions, tasks, evidence tables with enums, indexes, auto-updated_at trigger
 docs/ENV.md                  Full variable reference
 ```
 
