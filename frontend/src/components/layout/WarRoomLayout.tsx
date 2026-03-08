@@ -3,8 +3,13 @@ import { AgentGrid } from "../AgentGrid";
 import { EvidenceBoard } from "../EvidenceBoard";
 import { MissionTimeline } from "../MissionTimeline";
 import { VoicePanel } from "../VoicePanel";
+import { useWebSocket } from "../../hooks/useWebSocket";
+import { useMissionStore } from "../../store";
 
 export function WarRoomLayout() {
+  const missionId = useMissionStore((s) => s.mission?.id ?? null);
+  useWebSocket(missionId);
+
   return (
     <div className="bg-background text-text-primary h-screen w-screen flex flex-col overflow-hidden relative">
       {/* Subtle scanline texture overlay */}

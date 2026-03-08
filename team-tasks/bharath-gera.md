@@ -8,18 +8,22 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026
+**Last updated:** March 2026 — Session 6
 
 | Task | Status | Notes |
 |------|--------|-------|
 | 1.1 Monorepo Scaffold | ✅ Done | All dirs, `.gitignore`, `README.md` |
 | 1.2 Dependency Manifests | ✅ Done | `backend/pyproject.toml`, `frontend/package.json`, `package-lock.json` |
-| 1.3 Environment Config | ✅ Done | `.env.example` (13 vars), `docs/ENV.md`, `backend/config.py` (Pydantic Settings) |
+| 1.3 Environment Config | ✅ Done | `.env.example` (18 vars incl. `AWS_BEARER_TOKEN_BEDROCK`), `docs/ENV.md`, `backend/config.py` |
 | 1.4 CI Skeleton | ✅ Done | `.github/workflows/ci.yml`, `/health` endpoint, smoke tests passing |
 | 2.6 IAM + Secrets | ⏳ Pending | Needs Manav's AWS stack outputs (2.2–2.5) |
 | 2.7 Docker Compose | ✅ Done | `docker-compose.yml`, `infra/init.sql`, `Makefile` |
-| 13.1 Structured Logging | ⏳ Pending | Needs Phase 4–6 in place |
-| 14.1 Demo Seed Script | ⏳ Pending | Needs Phase 4, 5, 10 |
+| 4.1 Mission State Machine | ✅ Done | `backend/missions/` — schemas + repository; state machine (`PENDING→ACTIVE→SYNTHESIZING→COMPLETE`) |
+| 4.2 Mission CRUD API | ✅ Done | `POST /missions` (Nova Lite plan_tasks + Postgres), `GET /missions/{id}`, `PATCH /missions/{id}` — verified live |
+| 9.1 Redis Channels | ✅ Done | `backend/streaming/channels.py` + `docs/EVENTS.md` — full channel spec |
+| 9.2 WS Mission Relay | ✅ Done | `backend/streaming/ws_relay.py` — `/ws/mission/{id}` → 574 ms pipe confirmed |
+| 13.1 Structured Logging | ⏳ Pending | Needs Phase 4–6 in place (now they are — good time to add) |
+| 14.1 Demo Seed Script | ⏳ Pending | Needs Phase 5, 10 |
 | 14.2 Mock Mode | ⏳ Pending | Needs Phase 5, 6, 8 |
 | 14.3 Demo Reset Endpoint | ⏳ Pending | Needs Phase 4, 6, 9 |
 | 14.4 Architecture Diagram | ⏳ Pending | Can be done anytime |
@@ -29,11 +33,29 @@
 
 All foundation tasks are done and verified. CI runs green. The backend serves `GET /health → {"status": "ok"}`. Frontend builds and tests pass. Both `pip install -e ".[dev]"` and `npm install` work on a clean checkout.
 
+### Session 5 — Critical Path Complete ✅
+
+Tasks 4.1, 4.2, 9.1, and 9.2 were implemented by Bharath in Session 5 (reassigned from Manav so Manav could stay focused on AWS infra). The full end-to-end pipeline is now live:
+
+- `POST /missions` → Nova Lite `plan_tasks()` → real 6-task graph in Postgres ✅
+- `POST /evidence` → Postgres row + `EVIDENCE_FOUND` fires to Redis ✅
+- `/ws/mission/{id}` relay → browser receives events 574 ms after evidence ingest ✅
+- `/ws/voice` ↔ Nova Sonic bidirectional (all 5 tool handlers wired) ✅
+
+Also fixed: `backend/models/` moved from repo root to inside `backend/` so uvicorn imports work cleanly; `config.py` `env_file` path corrected to root `.env`.
+
+### Session 6 — E2E Bug Fixes & Integration Tests ✅
+
+Backend and docs updated in Session 6 (no new tasks assigned to you):
+
+- **Mission state machine:** `PATCH /missions/{id}` now enforces valid transitions; invalid transitions (e.g. COMPLETE → PENDING) return **409 Conflict** with a clear message. See `backend/missions/router.py` and `backend/tests/test_integration.py`.
+- **Evidence `created_at`:** EVIDENCE_FOUND Redis payload and REST evidence responses include a `created_at` alias (same as `timestamp`) so the frontend `EvidenceRecord` and `EvidenceCard` work with live data.
+- **Integration test suite:** `backend/tests/test_integration.py` — 43 tests covering health, mission CRUD, state-machine enforcement, evidence ingest/list, EVIDENCE_FOUND payload shape, WS relay connection, and SonicSession.trigger_response. Run: `pytest backend/tests/ -v`.
+
 ### Blocked On / Next Steps
 
-- **2.7 Docker Compose** ✅ Done — `docker-compose.yml` + `infra/init.sql` + `Makefile` delivered. Run `make dev-up` to start all services.
-- **13.1 Structured Logging** — add `backend/logging_config.py` once other services are being built so the context vars (`mission_id`, `agent_id`) have callers.
-- **14.x Demo tasks** — all require multiple other phases to be complete. Return to these once Phases 4–10 are done.
+- **13.1 Structured Logging** — all Phase 4–6 services are now in place; this is unblocked. Add `backend/logging_config.py` and bind `mission_id`/`agent_id` context vars.
+- **14.x Demo tasks** — Phase 4 is complete, Phase 5 (agents) still pending. Can start 14.4 (Architecture Diagram) now — no deps.
 - **2.6 IAM** — once Manav has ARNs from CDK outputs, create `docs/IAM.md` and the least-privilege policies.
 
 ---
@@ -54,14 +76,18 @@ As team lead you own the skeleton that every other engineer builds on top of, th
 | 1.4 | Project Init | CI skeleton | 1.2 | ✅ Done |
 | 2.6 | Infrastructure | IAM roles + Secrets Manager | 2.2–2.5 | ⏳ Pending |
 | 2.7 | Infrastructure | Local dev Docker Compose | 1.3, 2.2–2.4 | ✅ Done |
+| 4.1 | Orchestrator | Mission state machine and storage | 2.3 ✅ (local Docker) | ✅ Done |
+| 4.2 | Orchestrator | Mission CRUD API | 4.1 | ✅ Done |
+| 9.1 | Streaming | Redis pub/sub channel definitions | 2.2 ✅ (local Docker) | ✅ Done |
+| 9.2 | Streaming | WebSocket mission relay | 9.1 | ✅ Done |
 | 13.1 | Observability | Structured JSON logging standard | Phase 4, 5, 6 | ⏳ Pending |
-| 14.1 | Demo | Seeded demo mission script | Phase 4, 5, 10 | ⏳ Pending |
+| 14.1 | Demo | Seeded demo mission script | Phase 5, 10 | ⏳ Pending |
 | 14.2 | Demo | Mock mode for offline demo | 5.4, 6.1, 8.x | ⏳ Pending |
 | 14.3 | Demo | Demo reset endpoint | Phase 4, 6, 9 | ⏳ Pending |
 | 14.4 | Demo | Architecture diagram export | — | ⏳ Pending |
 | 14.5 | Demo | Load test script | Phase 4, 12 | ⏳ Pending |
 
-**Total: 12 tasks — 5 Done, 7 Pending**
+**Total: 16 tasks — 8 Done, 8 Pending**
 
 ---
 
@@ -369,6 +395,7 @@ As team lead you own the skeleton that every other engineer builds on top of, th
 README.md
 .env.example
 docs/ENV.md
+docs/EVENTS.md                 ✅ Done — full Redis channel + payload spec
 docs/IAM.md
 docs/LOGGING.md
 docs/DEMO.md
@@ -377,8 +404,18 @@ docs/architecture.png
 docs/architecture.svg
 .github/workflows/ci.yml
 backend/pyproject.toml
-backend/config.py              (Settings class)
+backend/config.py              ✅ Done (Settings class, fixed env_file path)
+backend/deps.py                ✅ Done (get_db, get_redis FastAPI dependencies)
 backend/logging_config.py
+backend/missions/              ✅ Done
+  __init__.py
+  schemas.py
+  repository.py
+  router.py
+backend/streaming/             ✅ Done
+  __init__.py
+  channels.py
+  ws_relay.py
 backend/routers/demo.py
 backend/tests/test_smoke.py
 frontend/package.json

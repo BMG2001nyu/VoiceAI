@@ -10,32 +10,34 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 4
+**Last updated:** March 2026 — Session 6
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 3.1 Sonic Streaming Wrapper | ✅ Done | `models/sonic_client.py` — Nova Realtime WebSocket, smoke-tested live |
-| 3.2 Sonic Tool Schemas | ✅ Done | `models/sonic_tools.py` — 5 tools in Nova Realtime + Bedrock formats |
-| 3.3 Voice Gateway FastAPI + WS | ⏳ Pending | Depends on 3.1 ✅, 3.2 ✅, Manav's 4.2 — critical unblocking task for Sariya |
+| 3.1 Sonic Streaming Wrapper | ✅ Done | `backend/models/sonic_client.py` — Nova Realtime WebSocket, smoke-tested live |
+| 3.2 Sonic Tool Schemas | ✅ Done | `backend/models/sonic_tools.py` — 5 tools in Nova Realtime + Bedrock formats |
+| 3.3 Voice Gateway FastAPI + WS | ✅ Done | `backend/gateway/voice_gateway.py` — `/ws/voice` bidirectional Nova Sonic bridge; all 5 tool handlers live |
 | 3.4 Audio Chunking + VAD | ⏳ Pending | Optional; skip for demo if time-pressed |
-| 3.5 Barge-in / Interruption | ⏳ Pending | Depends on 3.3; `session.interrupt()` already in SonicSession |
+| 3.5 Barge-in / Interruption | ⏳ Pending | Depends on 3.3 ✅; `session.interrupt()` already in SonicSession |
 | 5.1 Nova Act Session Manager | ⏳ Pending | Check current AgentCore Browser / Nova Act SDK availability |
-| 5.2 Agent Pool | ⏳ Pending | Depends on 5.1, Manav's Redis (2.2) |
+| 5.2 Agent Pool | ⏳ Pending | Depends on 5.1, Redis (local Docker ✅) |
 | 5.3 Agent Prompts (6 types) | ⏳ Pending | Can start now — `agents/prompts/` dir exists |
-| 5.4 Evidence Emission | ⏳ Pending | Depends on 5.1, Rahil's `POST /evidence` (6.1) |
+| 5.4 Evidence Emission | ⏳ Pending | Depends on 5.1, `POST /evidence` ✅ (Rahil, done) |
 | 5.5 Agent Lifecycle + Heartbeat | ⏳ Pending | Depends on 5.2, 4.5 |
 | 10.1 Task Decomposition Prompt | ⏳ Pending | `LiteClient.plan_tasks()` is ready — write prompts in `agents/prompts/` |
 | 10.2 Task Graph Dependency Res. | ⏳ Pending | Depends on 4.4 ✅, 4.5 |
 | 10.3 Agent-to-Task Assignment | ⏳ Pending | Depends on 5.2, 4.5 |
-| 11.1 Agent Command Protocol | ⏳ Pending | Depends on 5.2, Manav's 4.5 |
-| 11.2 Heartbeat Watchdog | ⏳ Pending | Depends on 5.5, 9.1 |
+| 11.1 Agent Command Protocol | ⏳ Pending | Depends on 5.2, 4.5 |
+| 11.2 Heartbeat Watchdog | ⏳ Pending | Depends on 5.5, 9.1 ✅ |
 | 11.3 Parallel Deployment | ⏳ Pending | Depends on 11.1, 10.3 |
 
-### Phase 3 Complete — What's in the Sonic Client
+### Phase 3 Complete — Voice Gateway is Live ✅
 
-Tasks 3.1 and 3.2 are fully implemented and smoke-tested against the live Nova API.
+Tasks 3.1, 3.2, and 3.3 are fully implemented. The Voice Gateway (`/ws/voice`) is live and all 5 tool call handlers are wired and tested.
 
-**`models/sonic_client.py`** — use it like this:
+**Session 6 — Voice Gateway bug fixes (already applied):** (1) **browser_to_sonic** now uses `websocket.receive()` instead of `receive_bytes()`, so JSON control messages (e.g. `{"type":"interrupt"}` for barge-in) no longer crash the connection. (2) **sonic_to_browser** runs in an outer loop so multi-turn conversations work (previously exited after first response). (3) After each tool result, the gateway calls **`session.trigger_response()`** so Nova Sonic generates its follow-up reply (Nova Realtime API does not auto-continue after function_call_output). `SonicSession.trigger_response()` is in `backend/models/sonic_client.py`. Integration test: `pytest backend/tests/test_integration.py -k trigger_response -v`.
+
+**`backend/models/sonic_client.py`** — use it like this:
 
 ```python
 from models.sonic_client import SonicClient
@@ -63,21 +65,22 @@ async with client.connect() as session:
 
 ### What You Can Start Now
 
-**Task 3.3 (Voice Gateway)** — you can write the full WebSocket handler now. The Sonic client is ready. The only missing piece is Manav's `POST /missions` endpoint for the `start_mission` tool handler. Stub it with an `httpx.AsyncClient` call to `localhost:8000/missions` and wire the rest.
-
 **Task 5.3 (Agent Prompts)** — no dependencies. Write six `.txt` files in `agents/prompts/` for each agent type (OFFICIAL_SITE, NEWS_BLOG, REDDIT_HN, GITHUB, FINANCIAL, RECENT_NEWS).
 
-**Task 10.1 (Decomposition Prompt)** — `LiteClient.plan_tasks()` is live. The few-shot prompt is already baked into the Lite client. You can now focus on per-agent-type prompt engineering in `agents/prompts/`.
+**Task 5.1 (Nova Act Session Manager)** — check current AgentCore Browser / Nova Act SDK availability and build `agents/browser_session.py`. `POST /evidence` is live (Rahil, done) so agents can emit findings immediately once browsing works.
+
+**Task 10.1 (Decomposition Prompt)** — `LiteClient.plan_tasks()` is live and tested against real Nova API. Focus on per-agent-type prompt engineering in `agents/prompts/`.
 
 ### What You Need First
 
 Already in place:
-- `docker-compose.yml` ✅ — **Session 4 delivered.** Run `make dev-up` to start Redis + Postgres + MinIO locally. Your voice gateway can now write `AGENT_UPDATE` events to Redis and have Sariya's WS relay pick them up without needing AWS.
-- `models/sonic_client.py` ✅ — `SonicClient`, `SonicSession`, `SonicEvent`
-- `models/sonic_tools.py` ✅ — `SONIC_TOOLS` (inject into `session.configure(tools=...)`)
-- `models/lite_client.py` ✅ — `LiteClient.plan_tasks()` for task decomposition
+- `docker-compose.yml` ✅ — `make dev-up` starts Redis + Postgres + MinIO locally. Your agents can write `AGENT_UPDATE` events to Redis and have the WS relay pick them up without needing AWS.
+- `backend/models/sonic_client.py` ✅ — `SonicClient`, `SonicSession`, `SonicEvent`
+- `backend/models/sonic_tools.py` ✅ — `SONIC_TOOLS` (inject into `session.configure(tools=...)`)
+- `backend/models/lite_client.py` ✅ — `LiteClient.plan_tasks()` for task decomposition
+- `backend/gateway/voice_gateway.py` ✅ — `/ws/voice` live; `start_mission`, `get_mission_status`, `get_new_findings`, `ask_user_for_clarification`, `deliver_final_briefing` all wired
+- `backend/evidence/router.py` ✅ — `POST /evidence` live (Rahil); agents can emit findings now
 - `backend/config.py` — `settings.nova_api_key` reads `NOVA_API_KEY` from env
-- `backend/main.py` — FastAPI app; mount your `voice_gateway.py` router here
 - `backend/pyproject.toml` — `openai`, `websockets`, `tenacity` already added
 
 The UI is already built by Sariya (Phase 1 UI):
@@ -104,22 +107,22 @@ Your breadth across Python backend and TypeScript, plus experience with browser-
 |------|-------|-------------|------------|--------|
 | 3.1 | Voice | Nova Sonic real-time WebSocket client | Nova API key | ✅ Done |
 | 3.2 | Voice | Sonic tool schema definitions | 3.1 | ✅ Done |
-| 3.3 | Voice | Voice Gateway FastAPI + WebSocket | 3.1 ✅, 3.2 ✅, Manav 4.2 | ⏳ Pending |
-| 3.4 | Voice | Audio chunking and VAD | 3.3 | ⏳ Pending |
-| 3.5 | Voice | Barge-in / interruption handling | 3.3 | ⏳ Pending |
+| 3.3 | Voice | Voice Gateway FastAPI + WebSocket | 3.1 ✅, 3.2 ✅, 4.2 ✅ | ✅ Done |
+| 3.4 | Voice | Audio chunking and VAD | 3.3 ✅ | ⏳ Pending |
+| 3.5 | Voice | Barge-in / interruption handling | 3.3 ✅ | ⏳ Pending |
 | 5.1 | Agents | Nova Act / AgentCore Browser session manager | Phase 2, Bedrock | ⏳ Pending |
 | 5.2 | Agents | Agent pool and concurrency control | 5.1 | ⏳ Pending |
 | 5.3 | Agents | Source-specialized agent prompts (6 types) | — | ⏳ Pending |
-| 5.4 | Agents | Structured evidence emission interface | 5.1, Phase 6 | ⏳ Pending |
+| 5.4 | Agents | Structured evidence emission interface | 5.1, 6.1 ✅ | ⏳ Pending |
 | 5.5 | Agents | Agent lifecycle and heartbeat | 5.2, 4.5 | ⏳ Pending |
 | 10.1 | Planning | Task decomposition prompt engineering | 4.4 ✅ | ⏳ Pending |
 | 10.2 | Planning | Task graph dependency resolution | 4.4 ✅, 4.5 | ⏳ Pending |
 | 10.3 | Planning | Agent-to-task assignment algorithm | 5.2, 4.5 | ⏳ Pending |
 | 11.1 | Orchestration | Agent command protocol | 5.2, 4.5 | ⏳ Pending |
-| 11.2 | Orchestration | Heartbeat timeout watchdog | 5.5, 9.1 | ⏳ Pending |
+| 11.2 | Orchestration | Heartbeat timeout watchdog | 5.5, 9.1 ✅ | ⏳ Pending |
 | 11.3 | Orchestration | Parallel deployment (asyncio) | 11.1 | ⏳ Pending |
 
-**Total: 16 tasks — 2 Done, 14 Pending**
+**Total: 16 tasks — 3 Done, 13 Pending**
 
 ---
 
@@ -655,9 +658,9 @@ Your breadth across Python backend and TypeScript, plus experience with browser-
 ## Quick Reference — Files You Own
 
 ```
-models/sonic_client.py
-models/sonic_tools.py
-backend/gateway/voice_gateway.py
+backend/models/sonic_client.py      ✅ Done (moved from repo root, Session 5)
+backend/models/sonic_tools.py       ✅ Done (moved from repo root, Session 5)
+backend/gateway/voice_gateway.py    ✅ Done (Session 5)
 backend/gateway/vad.py
 docs/VOICE_FORMAT.md
 agents/browser_session.py

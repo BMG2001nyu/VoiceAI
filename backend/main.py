@@ -1,10 +1,63 @@
-"""Placeholder for FastAPI app. Replace with full gateway and routers."""
+"""Mission Control — FastAPI application entry point."""
 
+from __future__ import annotations
+
+import logging
+from contextlib import asynccontextmanager
+
+import asyncpg
+import redis.asyncio as aioredis
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from config import settings
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # asyncpg needs a plain postgresql:// DSN (strips SQLAlchemy prefix).
+    dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    app.state.db = await asyncpg.create_pool(dsn=dsn, min_size=2, max_size=10)
+    app.state.redis = aioredis.from_url(settings.redis_url, decode_responses=False)
+    logger.info("DB pool and Redis connected")
+    yield
+    await app.state.db.close()
+    await app.state.redis.aclose()
+    logger.info("DB pool and Redis closed")
+
+
+app = FastAPI(title="Mission Control", version="0.1.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# ── Routers (mounted in build order) ──────────────────────────────────────────
+
+from missions.router import router as missions_router  # noqa: E402
+
+app.include_router(missions_router)
+
+from evidence.router import router as evidence_router  # noqa: E402
+
+app.include_router(evidence_router)
+
+from streaming.ws_relay import router as ws_relay_router  # noqa: E402
+
+app.include_router(ws_relay_router)
+
+from gateway.voice_gateway import router as voice_router  # noqa: E402
+
+app.include_router(voice_router)

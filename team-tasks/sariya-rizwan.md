@@ -9,7 +9,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026
+**Last updated:** March 2026 — Session 6
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -19,11 +19,11 @@
 | 8.4 Agent Fleet Grid | ✅ Done | `AgentGrid.tsx` + `AgentTile.tsx` + `StatusBadge.tsx` — 6 tiles, color-coded borders, scanning animation |
 | 8.5 Evidence Board | ✅ Done | `EvidenceBoard.tsx` + `EvidenceCard.tsx` — theme filter pills, confidence meter, source links |
 | 8.6 Mission Timeline | ✅ Done | `MissionTimeline.tsx` — all 7 event types with lucide-react icons, color-coded per type |
-| 8.7 WebSocket Integration | 🔄 Partial | `useWebSocket.ts` written with exponential-backoff reconnection; wired dispatch to Zustand — needs live `/ws/mission/{id}` backend |
-| 9.2 WebSocket Relay (backend) | ⏳ Pending | Backend `ws_relay.py` — blocked on Manav's Redis (Task 9.1) |
+| 8.7 WebSocket Integration | ✅ Done | `useWebSocket.ts` written with exponential-backoff reconnection; wired to Zustand — backend WS endpoints now live |
+| 9.2 WebSocket Relay (backend) | ✅ Done | `backend/streaming/ws_relay.py` — `/ws/mission/{id}` subscribes Redis, forwards to browser; 574 ms pipe confirmed |
 | 9.3 Frontend Event Bus (Zustand) | ✅ Done | `src/store/index.ts` — all slices (mission, agents, evidence, timeline, transcript); `src/types/api.ts` — full TypeScript types |
-| 9.4 Backpressure | ⏳ Pending | Batched flush + virtual scroll — implement once live WS is connected |
-| 13.5 Dead-Letter Queue UI | ⏳ Pending | DLQ badge in header — blocked on Rahil's `POST /evidence` + Manav's Redis |
+| 9.4 Backpressure | ⏳ Pending | Batched flush + virtual scroll — implement once live WS is connected (it now is!) |
+| 13.5 Dead-Letter Queue UI | ⏳ Pending | DLQ badge in header — `POST /evidence` ✅ is live; add `GET /internal/dlq/count` poll |
 
 ### Phase 1 UI — Complete ✅
 
@@ -31,12 +31,24 @@ The full War Room UI renders with mock data. Seeded with a live Sequoia demo mis
 
 Run: `cd frontend && npm run dev` → http://localhost:5173 (or next available port).
 
+### Session 5 — Backend Live, Connect UI ⬅️ Your Next Step
+
+Both backend WebSocket endpoints are now live:
+- `/ws/voice` (Chinmay) ✅
+- `/ws/mission/{id}` (Bharath) ✅ — 574 ms event pipe confirmed
+
+**Session 6 — EVIDENCE_FOUND payload fix (already applied):** In `useWebSocket.ts`, the backend publishes `EVIDENCE_FOUND` with the evidence object **directly as `payload`**, not nested under `payload.evidence`. The hook was updated from `addEvidence(msg.payload.evidence)` to `addEvidence(msg.payload)` so new evidence cards appear correctly when events stream in. The backend also sends a `created_at` alias so `EvidenceCard`'s timestamp display works.
+
+**Your immediate next step (Session 6):** Wire the War Room UI to the live backend:
+1. In `store/index.ts`, replace the hardcoded mock `missionId` with the UUID returned from `POST /missions`.
+2. The `useWebSocket.ts` hook will then auto-connect to `/ws/mission/{real-id}` and drive all state from live Redis events (EVIDENCE_FOUND now handled correctly).
+3. `POST /evidence` is live — you can test the full evidence streaming pipeline end-to-end right now.
+
 ### Blocked On / Next Steps
 
-- **8.7 (complete):** Once Chinmay's `/ws/voice` and Manav's `/ws/mission/{id}` are live, remove the demo mock data from `store/index.ts` and let `useWebSocket.ts` drive state. The hook is ready — just needs the URLs.
-- **9.2 WebSocket relay:** Sariya and Manav co-own this. Manav provides the Redis pub/sub channels (Task 9.1); Sariya implements `backend/gateway/ws_relay.py`.
-- **9.4 Backpressure:** Add `src/hooks/useThrottledStore.ts` once there's a real event stream to measure. Also add `@tanstack/react-virtual` to Evidence Board.
-- **13.5 DLQ badge:** Add `GET /internal/dlq/count` poll to `Header.tsx` once Rahil's evidence ingest DLQ backend is wired.
+- **Live backend connection** — swap mock `missionId` in Zustand store with real UUID from `POST /missions localhost:8000/missions`. The `useWebSocket` hook is already wired correctly.
+- **9.4 Backpressure:** Add `src/hooks/useThrottledStore.ts` now that there's a real event stream to measure. Also add `@tanstack/react-virtual` to Evidence Board.
+- **13.5 DLQ badge:** Add `GET /internal/dlq/count` poll to `Header.tsx`. `POST /evidence` is live — just needs the DLQ endpoint added to the backend.
 
 ---
 
@@ -54,15 +66,15 @@ Your neon-exchange project — a pixel art market city prototype — is exactly 
 | 8.2 | War Room UI | Full-screen War Room layout | 8.1 | ✅ Done |
 | 8.3 | War Room UI | Voice panel (mic, waveform, transcript) | 8.2, Phase 9 (WS) | ✅ Done |
 | 8.4 | War Room UI | Agent Fleet Grid (live tiles) | 8.2, Phase 9 | ✅ Done |
-| 8.5 | War Room UI | Evidence Board (streaming cards) | 8.2, 6.4, Phase 9 | ✅ Done |
+| 8.5 | War Room UI | Evidence Board (streaming cards) | 8.2, 6.4 ✅, Phase 9 | ✅ Done |
 | 8.6 | War Room UI | Mission Timeline (event log) | 8.2, Phase 9 | ✅ Done |
-| 8.7 | War Room UI | WebSocket integration + reconnection | 8.3–8.6 | 🔄 Partial |
-| 9.2 | Streaming | WebSocket relay (backend → frontend) | 9.1, 3.3 | ⏳ Pending |
-| 9.3 | Streaming | Frontend event bus and state (Zustand) | 8.1, 9.2 | ✅ Done |
-| 9.4 | Streaming | Backpressure and rate limiting | 9.2, 9.3 | ⏳ Pending |
-| 13.5 | Observability | Dead-letter queue and retry strategy | 6.1, 11.1 | ⏳ Pending |
+| 8.7 | War Room UI | WebSocket integration + reconnection | 8.3–8.6 | ✅ Done |
+| 9.2 | Streaming | WebSocket relay (backend → frontend) | 9.1 ✅, 3.3 ✅ | ✅ Done |
+| 9.3 | Streaming | Frontend event bus and state (Zustand) | 8.1, 9.2 ✅ | ✅ Done |
+| 9.4 | Streaming | Backpressure and rate limiting | 9.2 ✅, 9.3 ✅ | ⏳ Pending |
+| 13.5 | Observability | Dead-letter queue and retry strategy | 6.1 ✅, 11.1 | ⏳ Pending |
 
-**Total: 11 tasks — 7 Done, 1 Partial, 3 Pending**
+**Total: 11 tasks — 9 Done, 2 Pending**
 
 ---
 
@@ -70,10 +82,10 @@ Your neon-exchange project — a pixel art market city prototype — is exactly 
 
 | You need from | What |
 |---------------|------|
-| **Chinmay** | Voice Gateway WebSocket endpoint (`/ws/voice`, Task 3.3) and interrupt control format; WebSocket relay backend (Task 9.2 — you own both ends) |
-| **Manav** | Mission REST API (`GET /missions/{id}`, Task 4.2); ALB URL and CORS config (Task 2.1); Redis pub/sub channel format from `docs/EVENTS.md` (Task 9.1) |
-| **Rahil** | Evidence list API (`GET /missions/{id}/evidence`, Task 6.4); presigned screenshot URLs (Task 6.2) |
-| **Bharath** | `VITE_WS_URL`, `VITE_API_URL` env vars documented in Task 1.3; frontend `package.json` scaffold (Task 1.2) |
+| **Chinmay** | ~~Voice Gateway WebSocket (`/ws/voice`, Task 3.3)~~ ✅ **Done** |
+| **Bharath** | ~~Mission REST API (`GET/POST /missions`, Task 4.2)~~ ✅ **Done** · ~~Redis channels (`docs/EVENTS.md`, Task 9.1)~~ ✅ **Done** · ~~WS relay (`/ws/mission/{id}`, Task 9.2)~~ ✅ **Done** |
+| **Rahil** | ~~Evidence list API (`GET /missions/{id}/evidence`, Task 6.4)~~ ✅ **Done** · Presigned screenshot URLs (Task 6.2) — still pending |
+| **Manav** | ALB URL and CORS config for production deployment (Task 2.1) — still pending |
 
 ---
 

@@ -34,7 +34,8 @@ dev = [
 ]
 
 [tool.setuptools]
-py-modules = ["main", "config"]
+packages = ["models", "missions", "evidence", "streaming", "gateway"]
+py-modules = ["main", "config", "deps"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

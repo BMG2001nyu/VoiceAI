@@ -9,7 +9,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 4
+**Last updated:** March 2026 — Session 6
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -18,40 +18,48 @@
 | 2.3 Postgres RDS | ⏳ Pending | Depends on 2.1; use `infra/init.sql` schema |
 | 2.4 S3 Buckets | ⏳ Pending | Depends on 2.1 |
 | 2.5 OpenSearch Serverless | ⏳ Pending | Coordinate with Rahil on embedding dimension before creating index |
-| 4.1 Mission State Machine | ⏳ Pending | Depends on 2.2, 2.3 |
-| 4.2 Mission CRUD API | ⏳ Pending | Depends on 4.1 — unblocks Chinmay (3.3) and Sariya |
-| 4.3 Context Packet Builder | ⏳ Pending | Depends on 4.1 |
-| 4.4 Task Graph (Nova Lite) | ✅ Done | `models/lite_client.py` — plan_tasks(), plan_next_actions(), synthesize_briefing() |
+| 4.1 Mission State Machine | ✅ Done | Reassigned to Bharath — Session 5. `backend/missions/` live and tested. |
+| 4.2 Mission CRUD API | ✅ Done | Reassigned to Bharath — Session 5. `POST /missions`, `GET`, `PATCH` all verified live. |
+| 4.3 Context Packet Builder | ⏳ Pending | Depends on 4.1 ✅ |
+| 4.4 Task Graph (Nova Lite) | ✅ Done | `backend/models/lite_client.py` — plan_tasks(), plan_next_actions(), synthesize_briefing() |
 | 4.5 Orchestrator Planning Loop | ⏳ Pending | Depends on 4.3, 4.4 ✅, Phase 5 |
-| 9.1 Redis Pub/Sub Channels | ⏳ Pending | Depends on 2.2, 4.1, 6.1 — unblocks Sariya's WS relay |
+| 9.1 Redis Pub/Sub Channels | ✅ Done | Reassigned to Bharath — Session 5. `backend/streaming/channels.py` + `docs/EVENTS.md` |
 | 13.2 Metrics Emission | ⏳ Pending | Instrument after Phases 3–6 in place |
 | 13.3 CloudWatch Dashboards | ⏳ Pending | Depends on 13.2 |
 | 13.4 Distributed Tracing | ⏳ Pending | Depends on 13.1 (Bharath's logging setup) |
 
 ### What You're Unblocking
 
-Your first four tasks (2.1–2.4 infra + 4.2 Mission API) directly unblock:
-- **Chinmay** — `models/sonic_client.py` is ready; Chinmay can build Task 3.3 gateway logic now but needs your `POST /missions` endpoint for the `start_mission` tool handler
-- **Rahil** — can't ingest evidence until 2.3 (Postgres) and 2.4 (S3) exist
-- **Sariya** — `GET /missions/{id}` (Task 4.2) is needed for WS reconnect state refetch; ALB URL needed for CORS config
+Your AWS infra tasks (2.1–2.5) directly unblock:
+- **Rahil** — can't run embedding pipeline until OpenSearch exists (Task 2.5); S3 for screenshots needs Task 2.4
+- **Sariya** — ALB URL needed for CORS config in production deployment
+- **Everyone** — production deployment blocked on VPC/ECS/ALB (Task 2.1)
+
+### What Is Done (Session 5 + 6)
+
+Tasks 4.1, 4.2, and 9.1 were implemented by Bharath in Session 5 so you could focus on AWS infra. The local backend is fully live:
+- `POST /missions` → Nova Lite returns real 6-task graph → stored in Postgres ✅
+- `GET /missions/{id}`, `PATCH /missions/{id}` verified ✅ (Session 6: PATCH now enforces valid state transitions — 409 for invalid)
+- Redis channels (`docs/EVENTS.md`) defined and tested ✅
+- `/ws/mission/{id}` relay confirmed working (574 ms pipe) ✅
+
+Session 6 added a full integration test suite (`backend/tests/test_integration.py`, 43 tests) covering mission CRUD and state-machine enforcement.
 
 ### What You Need First
 
-Already in place (no waiting required):
-- `docker-compose.yml` ✅ — **Session 4 delivered.** Run `make dev-up` to get Redis 7, Postgres 16, and MinIO all healthy locally. `infra/init.sql` creates the full `missions`, `tasks`, `evidence` schema automatically on first boot. You can start Tasks 4.1–4.3 against local Postgres/Redis without needing AWS infra.
-- `models/lite_client.py` ✅ — `LiteClient.plan_tasks()` and `plan_next_actions()` are live and tested. Import directly into your `task_planner.py` (Task 4.4 integration):
+Already in place:
+- `docker-compose.yml` ✅ — `make dev-up` → Redis 7, Postgres 16, MinIO all healthy locally
+- `backend/models/lite_client.py` ✅ — `LiteClient.plan_tasks()` and `plan_next_actions()` live and tested. Import for Task 4.5:
   ```python
   from models.lite_client import LiteClient
   client = LiteClient(api_key=settings.nova_api_key)
-  tasks = await client.plan_tasks(mission.objective)
   commands = await client.plan_next_actions(context_packet)
   ```
-- `backend/config.py` — `settings.nova_api_key` reads `NOVA_API_KEY` from env; all infra URL settings already wired
-- `.env.example` — has placeholders for `REDIS_URL`, `DATABASE_URL`, `OPENSEARCH_ENDPOINT`, `S3_BUCKET_EVIDENCE`, `NOVA_API_KEY`
-- `backend/pyproject.toml` — all Python deps already pinned including `asyncpg`, `redis[hiredis]`, `boto3`, `sqlalchemy[asyncio]`, `openai`, `websockets`
-- `backend/main.py` — FastAPI app ready to mount your routers
+- `backend/config.py` — `settings.nova_api_key` reads `NOVA_API_KEY` from env; all infra URL settings wired
+- `backend/main.py` — FastAPI app with lifespan; routers already mounted
+- `backend/missions/` ✅ — `get_mission`, `update_mission_status` ready for use in Task 4.3
 
-**Your immediate next step (Session 5):** Task 4.2 — `POST /missions` CRUD API. Local Postgres is now running via Docker Compose — you can build and test 4.1 (state machine) and 4.2 (CRUD API) right now without any AWS account. This is the single biggest unlocker for the whole team. Once `POST /missions` is live, Chinmay's voice gateway `start_mission` tool handler works end-to-end.
+**Your immediate next step (Session 6):** Tasks 2.1–2.5 AWS infra — VPC, ECS, Redis ElastiCache, Postgres RDS, OpenSearch. Local Docker Compose handles all dev needs; AWS infra is needed for production deployment and Rahil's embedding pipeline.
 
 ---
 
@@ -70,17 +78,17 @@ Your cloud engineering background (TA for Cloud Computing, AWS infra, Docker/K8s
 | 2.3 | Infrastructure | Postgres RDS or DynamoDB | 2.1 | ⏳ Pending |
 | 2.4 | Infrastructure | S3 buckets | 2.1 | ⏳ Pending |
 | 2.5 | Infrastructure | Vector store (OpenSearch Serverless) | 2.1 | ⏳ Pending |
-| 4.1 | Orchestrator | Mission state machine and storage | 2.3 | ⏳ Pending |
-| 4.2 | Orchestrator | Mission CRUD API | 4.1 | ⏳ Pending |
-| 4.3 | Orchestrator | Context packet builder | 4.1 | ⏳ Pending |
+| 4.1 | Orchestrator | Mission state machine and storage | 2.3 | ✅ Done (Bharath, Session 5) |
+| 4.2 | Orchestrator | Mission CRUD API | 4.1 | ✅ Done (Bharath, Session 5) |
+| 4.3 | Orchestrator | Context packet builder | 4.1 ✅ | ⏳ Pending |
 | 4.4 | Orchestrator | Task graph construction (Nova Lite) | — | ✅ Done |
 | 4.5 | Orchestrator | Orchestrator planning loop | 4.3, 4.4 ✅ | ⏳ Pending |
-| 9.1 | Streaming | Redis pub/sub channel definitions | 2.2, 4.1, 6.1 | ⏳ Pending |
+| 9.1 | Streaming | Redis pub/sub channel definitions | 2.2, 4.1 ✅, 6.1 ✅ | ✅ Done (Bharath, Session 5) |
 | 13.2 | Observability | Metrics emission (CloudWatch / OTel) | Phase 3–6, 9 | ⏳ Pending |
 | 13.3 | Observability | CloudWatch dashboards and alarms | 13.2 | ⏳ Pending |
 | 13.4 | Observability | Distributed tracing (AWS X-Ray) | 13.1 | ⏳ Pending |
 
-**Total: 14 tasks — 1 Done, 13 Pending**
+**Total: 14 tasks — 4 Done, 10 Pending**
 
 ---
 
@@ -481,18 +489,20 @@ infra/cdk/                          (or infra/terraform/)
   lib/rds-stack.ts
   lib/s3-stack.ts
   lib/opensearch-stack.ts
-backend/missions/
-  state_machine.py
-  repository.py
+backend/missions/                   ✅ Done (Bharath, Session 5)
+  __init__.py
   schemas.py
-backend/routers/missions.py
+  repository.py
+  router.py
 backend/orchestrator/
   context_builder.py
   task_planner.py
   planner.py
-models/lite_client.py
-backend/streaming/publisher.py
-docs/EVENTS.md
+backend/models/lite_client.py       ✅ Done (moved from repo root in Session 5)
+backend/streaming/                  ✅ Done (Bharath, Session 5)
+  channels.py
+  ws_relay.py
+docs/EVENTS.md                      ✅ Done (Bharath, Session 5)
 backend/metrics.py
 infra/dashboard.json
 ```

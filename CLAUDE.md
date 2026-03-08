@@ -6,7 +6,7 @@ This file is the single source of truth for getting your local environment runni
 
 ## Current Implementation Status
 
-**Last updated:** March 2026 — Session 4
+**Last updated:** March 2026 — Session 6
 
 ### What Is Done
 
@@ -15,25 +15,29 @@ This file is the single source of truth for getting your local environment runni
 | Monorepo scaffold | ✅ Done | All dirs, `.gitignore`, `README.md` |
 | Backend deps | ✅ Done | `backend/pyproject.toml` (13 runtime deps + dev extras) |
 | Frontend deps | ✅ Done | `frontend/package.json`, `package-lock.json`, `tsconfig.json` |
-| Env config | ✅ Done | `.env.example` (17 vars incl. `NOVA_API_KEY`, `AGENT_POOL_SIZE`, `BACKEND_URL`), `docs/ENV.md`, `backend/config.py` |
+| Env config | ✅ Done | `.env.example` (18 vars incl. `NOVA_API_KEY`, `AWS_BEARER_TOKEN_BEDROCK`), `docs/ENV.md`, `backend/config.py` |
 | CI pipeline | ✅ Done | `.github/workflows/ci.yml` (4 parallel jobs, green) |
 | Backend health endpoint | ✅ Done | `GET /health → {"status": "ok"}` in `backend/main.py` |
 | Backend smoke test | ✅ Done | `backend/tests/test_smoke.py` — passing |
+| Backend integration tests | ✅ Done | `backend/tests/test_integration.py` — 43 tests (mission CRUD, state machine, evidence, WS relay) |
 | War Room UI | ✅ Done | Full dark war room layout, all panels rendered with mock data |
 | TypeScript types | ✅ Done | `frontend/src/types/api.ts` — all schemas (Mission, Agent, Evidence, Timeline) |
 | Zustand store | ✅ Done | `frontend/src/store/index.ts` — seeded with Sequoia demo mission |
-| WebSocket hook | 🔄 Partial | `frontend/src/hooks/useWebSocket.ts` — reconnection logic ready, needs live backend |
-| Nova Sonic client | ✅ Done | `models/sonic_client.py` — real-time WebSocket voice client, smoke-tested live |
-| Sonic tool schemas | ✅ Done | `models/sonic_tools.py` — 5 tools in Nova Realtime + Bedrock formats |
-| Nova Lite client | ✅ Done | `models/lite_client.py` — chat, streaming, plan_tasks, plan_next_actions, smoke-tested live |
+| WebSocket hook | ✅ Done | `frontend/src/hooks/useWebSocket.ts` — reconnection logic ready; connects to live `/ws/mission/{id}` |
+| Nova Sonic client | ✅ Done | `backend/models/sonic_client.py` — real-time WebSocket voice client, smoke-tested live |
+| Sonic tool schemas | ✅ Done | `backend/models/sonic_tools.py` — 5 tools in Nova Realtime + Bedrock formats |
+| Nova Lite client | ✅ Done | `backend/models/lite_client.py` — chat, streaming, plan_tasks, plan_next_actions, smoke-tested live |
 | Docker Compose | ✅ Done | `docker-compose.yml`, `infra/init.sql`, `Makefile` — Redis + Postgres + MinIO |
+| Mission CRUD API | ✅ Done | `backend/missions/` — schemas, repository, router; `POST /missions` calls Nova Lite + stores task graph |
+| Evidence Ingest API | ✅ Done | `backend/evidence/` — schemas, repository, router; `POST /evidence` + `GET /missions/{id}/evidence` |
+| Redis Channels | ✅ Done | `backend/streaming/channels.py` — channel helpers + `publish()`; `docs/EVENTS.md` full spec |
+| WS Mission Relay | ✅ Done | `backend/streaming/ws_relay.py` — `/ws/mission/{id}` subscribes Redis, forwards to browser; 574 ms pipe confirmed |
+| Voice Gateway | ✅ Done | `backend/gateway/voice_gateway.py` — `/ws/voice` bidirectional Nova Sonic bridge; all 5 tool handlers wired |
 | AWS Infra | ⏳ Pending | Manav — Tasks 2.1–2.6 |
-| Voice Gateway FastAPI | ⏳ Pending | Chinmay — Task 3.3 (3.1 & 3.2 are done) |
-| Mission Orchestrator | ⏳ Pending | Manav — Tasks 4.1–4.3, 4.5 (4.4 `lite_client` is done) |
 | Browser Agents | ⏳ Pending | Chinmay — Tasks 5.1–5.5 |
-| Evidence Layer | ⏳ Pending | Rahil — Tasks 6.1–6.4 |
+| Orchestrator Planning Loop | ⏳ Pending | Manav — Tasks 4.3, 4.5 |
 | Vector / Embeddings | ⏳ Pending | Rahil — Tasks 7.1–7.5 |
-| WS Streaming (backend) | ⏳ Pending | Manav + Sariya — Tasks 9.1–9.4 |
+| Evidence Scoring + Screenshots | ⏳ Pending | Rahil — Tasks 6.2–6.3 |
 | Synthesis | ⏳ Pending | Rahil — Tasks 12.1–12.3 |
 | Observability | ⏳ Pending | Bharath + Manav — Tasks 13.1–13.5 |
 | Demo scripts | ⏳ Pending | Bharath — Tasks 14.1–14.5 |
@@ -54,6 +58,9 @@ You will see the full war room: 6 agent tiles (4 active), 3 evidence cards acros
 ### Run the Backend
 
 ```bash
+# ⚠️  If Homebrew Postgres is installed, stop it first — it conflicts on port 5432:
+brew services stop postgresql@14   # adjust version if needed (check: brew services list)
+
 cd backend
 source venv/bin/activate   # or: python3 -m venv venv && source venv/bin/activate && pip install -e ".[dev]"
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -69,10 +76,10 @@ Both model clients have self-contained smoke tests that hit the live Nova API:
 source backend/venv/bin/activate
 
 # Test Nova 2 Lite (chat, plan_tasks, streaming)
-NOVA_API_KEY=<your-key> python models/lite_client.py
+NOVA_API_KEY=<your-key> python backend/models/lite_client.py
 
 # Test Nova 2 Sonic (WebSocket voice, PCM audio output)
-NOVA_API_KEY=<your-key> python models/sonic_client.py
+NOVA_API_KEY=<your-key> python backend/models/sonic_client.py
 # Saves nova_sonic_smoke.wav for playback verification
 ```
 
@@ -323,7 +330,7 @@ cd frontend
 npm run dev
 ```
 
-Visit [http://localhost:5173](http://localhost:5173) — the War Room UI loads immediately with mock demo data. No backend required to see the full UI. When the backend WebSocket endpoints are live (Chinmay's `/ws/voice` and Manav's `/ws/mission/{id}`), the `useWebSocket` hook will connect automatically and replace the mock data with live events.
+Visit [http://localhost:5173](http://localhost:5173) — the War Room UI loads immediately with mock demo data. No backend required to see the full UI. The backend WebSocket endpoints are now live — `/ws/voice` (Voice Gateway) and `/ws/mission/{id}` (WS relay) — so with Docker Compose up and the backend running, the `useWebSocket` hook will connect automatically and replace mock data with live events. **Next step (Sariya):** swap the hardcoded mock `missionId` in `store/index.ts` for a real UUID from `POST /missions`.
 
 ---
 
@@ -367,19 +374,22 @@ cd frontend && npm run dev
 # Run backend dev server (from backend/ with venv active)
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Run all backend tests (currently: smoke test only)
+# Run all backend tests (smoke + integration — 43 tests)
 pytest backend/tests/ -v
 
-# Run smoke test specifically
+# Run smoke test only
 pytest backend/tests/test_smoke.py -v
 
+# Run integration tests only
+pytest backend/tests/test_integration.py -v
+
 # Lint and format check
-ruff check backend/ models/ agents/
-black --check backend/ models/ agents/
+ruff check backend/ agents/ --exclude backend/venv
+black --check backend/ agents/
 
 # Auto-fix formatting
-black backend/ models/ agents/
-ruff check --fix backend/ models/ agents/
+black backend/ agents/
+ruff check --fix backend/ agents/ --exclude backend/venv
 ```
 
 ### Frontend
@@ -460,46 +470,59 @@ Files marked `✅` exist and are functional. Files marked `⏳` are planned but 
 VoiceAI/
 ├── tasks.md                    ✅ Full system engineering plan (with progress tracker)
 ├── CLAUDE.md                   ✅ This file
-├── .env.example                ✅ 14 placeholder env vars (incl. NOVA_API_KEY)
+├── .env.example                ✅ 18 placeholder env vars (incl. NOVA_API_KEY, AWS_BEARER_TOKEN_BEDROCK)
 ├── docker-compose.yml          ✅ Redis 7 + Postgres 16 + MinIO + bucket init
 ├── Makefile                    ✅ dev-up/down/logs/reset/status + backend/frontend helpers
 │
 ├── team-tasks/                 ✅ All task files updated with current status
-│   ├── bharath-gera.md         ✅ 4/12 tasks done
-│   ├── manav-parikh.md         ✅ 1/14 tasks done (4.4 lite_client)
-│   ├── rahil-singhi.md         ✅ 0/15 tasks (all pending)
-│   ├── chinmay-shringi.md      ✅ 2/16 tasks done (3.1 sonic_client, 3.2 sonic_tools)
-│   └── sariya-rizwan.md        ✅ 7/11 tasks done
+│   ├── bharath-gera.md         ✅ 8/16 tasks done
+│   ├── manav-parikh.md         ✅ 4/14 tasks done (4.1–4.2, 9.1 by Bharath; 4.4 lite_client)
+│   ├── rahil-singhi.md         ✅ 2/15 tasks done (6.1 ingest, 6.4 list API)
+│   ├── chinmay-shringi.md      ✅ 3/16 tasks done (3.1, 3.2, 3.3 — voice gateway + Session 6 fixes)
+│   └── sariya-rizwan.md        ✅ 9/11 tasks done (8.7 EVIDENCE_FOUND payload fix)
 │
 ├── .github/
 │   └── workflows/
 │       └── ci.yml              ✅ 4 parallel jobs — green
 │
 ├── backend/
-│   ├── main.py                 ✅ FastAPI app + GET /health
-│   ├── config.py               ✅ Pydantic Settings class (reads .env)
+│   ├── main.py                 ✅ FastAPI app + lifespan (asyncpg pool + Redis) + CORS
+│   ├── config.py               ✅ Pydantic Settings class (reads root .env)
+│   ├── deps.py                 ✅ Shared FastAPI dependencies (get_db, get_redis)
 │   ├── pyproject.toml          ✅ All Python deps pinned
 │   ├── logging_config.py       ⏳ Pending (Bharath Task 13.1)
-│   ├── missions/               ⏳ Pending (Manav Tasks 4.1–4.2)
-│   ├── orchestrator/           ⏳ Pending (Manav Tasks 4.3–4.5)
-│   ├── evidence/               ⏳ Pending (Rahil Tasks 6.1–6.4)
-│   ├── gateway/                ⏳ Pending (Chinmay Task 3.3)
+│   ├── missions/               ✅ Done (Bharath Tasks 4.1–4.2)
+│   │   ├── __init__.py         ✅
+│   │   ├── schemas.py          ✅ MissionCreate, MissionRecord, MissionStatus
+│   │   ├── repository.py       ✅ create_mission, get_mission, update_mission_status
+│   │   └── router.py           ✅ POST /missions, GET /missions/{id}, PATCH /missions/{id}
+│   ├── evidence/               ✅ Done (Rahil Tasks 6.1 + 6.4)
+│   │   ├── __init__.py         ✅
+│   │   ├── schemas.py          ✅ EvidenceIngest, EvidenceRecord
+│   │   ├── repository.py       ✅ create_evidence, get_evidence_by_mission
+│   │   └── router.py           ✅ POST /evidence, GET /missions/{id}/evidence
+│   ├── gateway/                ✅ Done (Chinmay Task 3.3)
+│   │   ├── __init__.py         ✅
+│   │   └── voice_gateway.py    ✅ /ws/voice — Nova Sonic bridge, 5 tool handlers
+│   ├── streaming/              ✅ Done (Tasks 9.1 + 9.2)
+│   │   ├── __init__.py         ✅
+│   │   ├── channels.py         ✅ channel name helpers + publish()
+│   │   └── ws_relay.py         ✅ /ws/mission/{id} — Redis pub/sub → browser WS
+│   ├── models/                 ✅ Moved from repo root (Session 5 fix)
+│   │   ├── __init__.py         ✅ Package init — exports all clients
+│   │   ├── sonic_client.py     ✅ Nova 2 Sonic real-time WebSocket client (Task 3.1)
+│   │   ├── sonic_tools.py      ✅ 5 tool schemas — Nova Realtime + Bedrock formats (Task 3.2)
+│   │   ├── lite_client.py      ✅ Nova 2 Lite chat/plan/stream client (Task 4.4)
+│   │   └── embedding_client.py ⏳ Pending (Rahil Task 7.1)
+│   ├── orchestrator/           ⏳ Pending (Manav Tasks 4.3, 4.5)
 │   ├── synthesis/              ⏳ Pending (Rahil Tasks 12.1–12.3)
-│   ├── routers/                ⏳ Pending
-│   ├── streaming/              ⏳ Pending (Manav Task 9.1)
 │   └── tests/
 │       ├── __init__.py         ✅
-│       └── test_smoke.py       ✅ async health check — passing
+│       ├── test_smoke.py       ✅ async health check — passing
+│       └── test_integration.py ✅ 43 tests — mission CRUD, state machine, evidence, WS relay
 │
 ├── agents/
 │   └── prompts/                ✅ directory exists (Chinmay to populate Task 5.3)
-│
-├── models/
-│   ├── __init__.py             ✅ Package init — exports all clients
-│   ├── sonic_client.py         ✅ Nova 2 Sonic real-time WebSocket client (Task 3.1)
-│   ├── sonic_tools.py          ✅ 5 tool schemas — Nova Realtime + Bedrock formats (Task 3.2)
-│   ├── lite_client.py          ✅ Nova 2 Lite chat/plan/stream client (Task 4.4)
-│   └── embedding_client.py     ⏳ Pending (Rahil Task 7.1)
 │
 ├── frontend/
 │   ├── package.json            ✅ All deps (react, zustand, tanstack, tailwindcss, lucide-react…)
@@ -540,7 +563,7 @@ VoiceAI/
 │
 └── docs/
     ├── ENV.md                  ✅ Full variable reference
-    ├── EVENTS.md               ⏳ Pending (Manav Task 9.1)
+    ├── EVENTS.md               ✅ Done — full channel + payload spec (Task 9.1)
     ├── VOICE_FORMAT.md         ⏳ Pending (Chinmay Task 3.4)
     ├── IAM.md                  ⏳ Pending (Bharath Task 2.6)
     ├── LOGGING.md              ⏳ Pending (Bharath Task 13.1)
@@ -590,13 +613,14 @@ These are the cross-team touchpoints most likely to cause merge conflicts or blo
 
 | Event | Who completes it | Who is unblocked |
 |-------|-----------------|------------------|
-| `POST /missions` API live (`localhost:8000/missions`) | Manav | Chinmay (voice gateway tool execution), Rahil (demo), Sariya (API calls from UI) |
-| `POST /evidence` API live | Rahil | Chinmay (agents emit to this endpoint) |
-| Redis channels defined (`docs/EVENTS.md`) | Manav | Sariya (WebSocket relay), Chinmay (AGENT_UPDATE events) |
-| Voice Gateway WebSocket live (`/ws/voice`) | Chinmay | Sariya (VoicePanel connects) |
-| Mission WebSocket relay live (`/ws/mission/{id}`) | Sariya | Sariya can test live evidence streaming |
+| ~~`POST /missions` API live (`localhost:8000/missions`)~~ | ~~Bharath~~ ✅ **Done** | Chinmay (voice gateway tool execution ✅), Rahil (demo), Sariya (API calls from UI) |
+| ~~`POST /evidence` API live~~ | ~~Rahil~~ ✅ **Done** | Chinmay (agents emit to this endpoint) |
+| ~~Redis channels defined (`docs/EVENTS.md`)~~ | ~~Bharath~~ ✅ **Done** | Sariya (WS relay ✅), Chinmay (AGENT_UPDATE events) |
+| ~~Voice Gateway WebSocket live (`/ws/voice`)~~ | ~~Chinmay~~ ✅ **Done** | Sariya (VoicePanel can now connect) |
+| ~~Mission WebSocket relay live (`/ws/mission/{id}`)~~ | ~~Bharath~~ ✅ **Done** | Full event pipe confirmed (574 ms `POST /evidence` → browser) |
+| Connect War Room UI to live backend | Sariya | Remove mock `missionId` from Zustand store; use real mission UUID from `POST /missions` |
 | ~~`models/lite_client.py` exists~~ | ~~Manav~~ ✅ **Done** | Chinmay (task decomposition, Task 10.1), Rahil (theme labeller, Task 7.4) |
-| ~~`models/sonic_client.py` + `sonic_tools.py` exist~~ | ~~Chinmay~~ ✅ **Done** | Chinmay can now build Task 3.3 (Voice Gateway) |
+| ~~`models/sonic_client.py` + `sonic_tools.py` exist~~ | ~~Chinmay~~ ✅ **Done** | Voice Gateway built ✅ |
 | `models/embedding_client.py` exists + dimension constant exported | Rahil | Manav (OpenSearch index dimension, Task 2.5) |
 | ~~Docker Compose up (`docker-compose.yml` created — Task 2.7)~~ | ~~Bharath~~ ✅ **Done** | Everyone can now run Redis + Postgres + MinIO locally |
 
@@ -633,6 +657,22 @@ The Postgres container takes 5–10 s to be ready on first boot. Wait and retry:
 docker compose exec postgres psql -U mc -d missioncontrol -c "SELECT 1"
 ```
 
+### `role "mc" does not exist` when connecting via asyncpg
+
+A local Homebrew Postgres is squatting on port 5432, intercepting connections before Docker's container gets them. Fix:
+
+```bash
+# Find the conflicting service
+brew services list | grep postgres
+lsof -i :5432
+
+# Stop it (restart later with 'start')
+brew services stop postgresql@14   # adjust version number
+
+# Verify Docker's Postgres is now reachable
+python3 -c "import asyncio, asyncpg; asyncio.run(asyncpg.connect('postgresql://mc:mc@localhost:5432/missioncontrol'))"
+```
+
 ### Bedrock `AccessDeniedException`
 
 You do not have model access yet. Check the Bedrock console → Model access page for your region (`us-east-1`). If you see "Available to request", click Request access.
@@ -651,6 +691,6 @@ The request body does not match `EvidenceIngest` schema. Check required fields: 
 
 ---
 
-*Last updated: March 2026 — Session 4. Questions? Ask Bharath or drop a message in the team chat.*
+*Last updated: March 2026 — Session 6. Questions? Ask Bharath or drop a message in the team chat.*
 
-**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live and smoke-tested: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅. Docker Compose live ✅ (`make dev-up` → Redis + Postgres + MinIO all healthy, full schema loaded). **15/68 tasks done (22%).** Session 5 priorities: (1) **Manav** — Task 4.2 Mission CRUD API (`POST /missions`) — biggest unlocker for the whole team; (2) **Chinmay** — Task 3.3 Voice Gateway (`/ws/voice`); (3) **Rahil** — Task 7.1 `embedding_client.py` (no deps, start now); (4) **Bharath** — Task 13.1 Structured Logging or Task 14.4 Architecture Diagram. See `tasks.md` → Implementation Progress for the full tracker.
+**Quick status:** Critical path complete; Session 6 E2E bug fixes and integration tests done. `POST /missions` → Nova Lite → Postgres ✅. `PATCH /missions/{id}` enforces valid state transitions (409 for invalid). `POST /evidence` → Redis `EVIDENCE_FOUND` (payload includes `created_at` alias) → browser via `useWebSocket` (fixed: use `msg.payload` not `msg.payload.evidence`) ✅. `/ws/voice` multi-turn, interrupt handling, `trigger_response()` after tool results ✅. **43 backend tests** in `test_integration.py` + smoke. **22/68 tasks done (32%).** Session 6 doc updates: tasks.md, CLAUDE.md, and all team-tasks/*.md updated. Next: **Sariya** — connect War Room UI (real missionId); **Rahil** — 7.1 embedding_client; **Manav** — 2.1–2.5 AWS infra; **Chinmay** — 5.1–5.3 browser agents; **Bharath** — 13.1 logging. See `tasks.md` → Implementation Progress.

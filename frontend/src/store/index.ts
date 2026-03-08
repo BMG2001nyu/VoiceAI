@@ -8,8 +8,12 @@ import type {
   ConnectionStatus,
 } from "../types/api";
 
+// Allow overriding the mission ID via ?mission=<uuid> in the URL so you can
+// point the War Room at a real backend mission without editing code.
+const _urlMissionId = new URLSearchParams(window.location.search).get("mission");
+
 const MOCK_MISSION: MissionRecord = {
-  id: "demo-mission-001",
+  id: _urlMissionId ?? "demo-mission-001",
   objective:
     "I'm pitching to Sequoia next week. Find their recent investments, partner priorities, founder complaints, and AI portfolio weaknesses.",
   status: "ACTIVE",

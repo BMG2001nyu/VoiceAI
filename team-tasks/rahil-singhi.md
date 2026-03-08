@@ -9,37 +9,38 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 4
+**Last updated:** March 2026 — Session 6
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 6.1 Evidence Schema + Ingest API | ⏳ Pending | Depends on Manav's Postgres (2.3) and Redis (2.2) |
-| 6.2 Screenshot S3 Upload | ⏳ Pending | Depends on 6.1 and Manav's S3 bucket (2.4) |
-| 6.3 Confidence + Novelty Scoring | ⏳ Pending | Depends on 6.1; novelty needs Phase 7.2 |
-| 6.4 Evidence List API | ⏳ Pending | Depends on 6.1 — unblocks Sariya's Evidence Board |
+| 6.1 Evidence Schema + Ingest API | ✅ Done | `backend/evidence/` — schemas, repository, router; `POST /evidence` verified live |
+| 6.2 Screenshot S3 Upload | ⏳ Pending | Depends on 6.1 ✅ and S3 bucket (local MinIO ✅ via Docker Compose) |
+| 6.3 Confidence + Novelty Scoring | ⏳ Pending | Depends on 6.1 ✅; novelty needs Phase 7.2 |
+| 6.4 Evidence List API | ✅ Done | `GET /missions/{id}/evidence` with theme filter + pagination — verified live |
 | 7.1 Embedding Client | ⏳ Pending | Coordinate with Manav on dimension before he creates OpenSearch index (2.5) |
-| 7.2 Embedding Pipeline | ⏳ Pending | Depends on 7.1, 6.1, Manav's OpenSearch (2.5) |
+| 7.2 Embedding Pipeline | ⏳ Pending | Depends on 7.1, 6.1 ✅, Manav's OpenSearch (2.5) |
 | 7.3 Semantic Clustering | ⏳ Pending | Depends on 7.2 |
-| 7.4 Theme Classification | ⏳ Pending | Depends on 7.3; needs `models/lite_client.py` from Manav (4.4) |
+| 7.4 Theme Classification | ⏳ Pending | Depends on 7.3; `backend/models/lite_client.py` ✅ ready |
 | 7.5 Contradiction Detection | ⏳ Pending | Depends on 7.2, 4.3 |
 | 10.4 Agent Reallocation Triggers | ⏳ Pending | Depends on 4.5, 5.5 |
 | 10.5 Mission Stopping Criteria | ⏳ Pending | Depends on 4.5, 4.3 |
-| 11.4 Agent Result Aggregation | ⏳ Pending | Depends on 5.4, 6.1, 4.5 |
+| 11.4 Agent Result Aggregation | ⏳ Pending | Depends on 5.4, 6.1 ✅, 4.5 |
 | 12.1 Clustering + Cluster Labels | ⏳ Pending | Depends on 7.3, 7.4 |
 | 12.2 Final Intelligence Synthesis | ⏳ Pending | Depends on 4.3, 7.4, 7.5 |
-| 12.3 Spoken Briefing via Sonic | ⏳ Pending | Depends on Chinmay's gateway (3.3) and 12.2 |
+| 12.3 Spoken Briefing via Sonic | ⏳ Pending | Depends on Chinmay's gateway (3.3 ✅) and 12.2 |
 
 ### What You Need First
 
-- `docker-compose.yml` ✅ — **Session 4 delivered.** Run `make dev-up` to start Redis + Postgres + MinIO locally. The `evidence` table is already created by `infra/init.sql`. You can build and test Tasks 6.1–6.4 against local Postgres and MinIO without waiting for Manav's AWS infra. For `S3_BUCKET_EVIDENCE`, point to `http://localhost:9000` with `AWS_ACCESS_KEY_ID=minioadmin`.
+- `docker-compose.yml` ✅ — `make dev-up` starts Redis + Postgres + MinIO locally. The `evidence` table is created by `infra/init.sql`. For `S3_BUCKET_EVIDENCE`, point to `http://localhost:9000` with `AWS_ACCESS_KEY_ID=minioadmin`.
+- `backend/evidence/` ✅ — **Session 5 delivered.** `POST /evidence` and `GET /missions/{id}/evidence` are live and tested. **Session 6:** Evidence API and Redis `EVIDENCE_FOUND` publish payload now include a **`created_at`** alias (same value as `timestamp`) so the frontend `EvidenceRecord` type and `EvidenceCard` (which use `created_at`) work correctly with live events. See `backend/evidence/router.py` and `EvidenceResponse` in `schemas.py`.
 
-The TypeScript types for your evidence schema are already defined in `frontend/src/types/api.ts` — use these as the source of truth when writing your Pydantic models in `backend/evidence/schemas.py` so field names stay in sync with Sariya's UI.
+The TypeScript types for your evidence schema are already defined in `frontend/src/types/api.ts` — field names are already in sync with Sariya's UI.
 
-**Your critical path:** 7.1 (embedding client) → tell Manav the `EMBEDDING_DIMENSION` constant → he creates the OpenSearch index → then 6.1 → 7.2 can run in parallel.
+**Your critical path now:** 7.1 (embedding client) → tell Manav the `EMBEDDING_DIMENSION` constant → he creates the OpenSearch index (Task 2.5) → then 7.2 (embedding pipeline) can run. Start 7.1 immediately — no dependencies.
 
-**Share with Manav early:** `EMBEDDING_DIMENSION` from `models/embedding_client.py` — he needs it before provisioning OpenSearch (Task 2.5).
+**Share with Manav early:** `EMBEDDING_DIMENSION` from `backend/models/embedding_client.py` — he needs it before provisioning OpenSearch (Task 2.5).
 
-**Share with Chinmay early:** The `POST /internal/deliver-briefing` contract (Task 12.3) — he builds against this in his voice gateway (Task 3.3).
+**Share with Chinmay:** The `POST /internal/deliver-briefing` contract (Task 12.3) — he builds against this in his voice gateway (Task 3.3 ✅ already done, awaiting this endpoint).
 
 ---
 
@@ -53,23 +54,23 @@ Your MarketPulse-AI project is essentially a proof of concept for everything Mis
 
 | Task | Phase | Description | Depends On | Status |
 |------|-------|-------------|------------|--------|
-| 6.1 | Evidence | Evidence schema, storage, ingest API | 2.3 | ⏳ Pending |
-| 6.2 | Evidence | Screenshot capture + S3 upload | 6.1, 2.4 | ⏳ Pending |
-| 6.3 | Evidence | Confidence + novelty scoring | 6.1, Phase 7 | ⏳ Pending |
-| 6.4 | Evidence | Evidence list API (paginated, theme filter) | 6.1 | ⏳ Pending |
+| 6.1 | Evidence | Evidence schema, storage, ingest API | 2.3 ✅ (local Docker) | ✅ Done |
+| 6.2 | Evidence | Screenshot capture + S3 upload | 6.1 ✅, 2.4 | ⏳ Pending |
+| 6.3 | Evidence | Confidence + novelty scoring | 6.1 ✅, Phase 7 | ⏳ Pending |
+| 6.4 | Evidence | Evidence list API (paginated, theme filter) | 6.1 ✅ | ✅ Done |
 | 7.1 | Vectors | Nova Multimodal Embeddings client | Phase 1, Bedrock access | ⏳ Pending |
-| 7.2 | Vectors | Embedding pipeline on evidence ingest | 7.1, 6.1, 2.5 | ⏳ Pending |
+| 7.2 | Vectors | Embedding pipeline on evidence ingest | 7.1, 6.1 ✅, 2.5 | ⏳ Pending |
 | 7.3 | Vectors | Semantic clustering endpoint | 7.2 | ⏳ Pending |
-| 7.4 | Vectors | Theme classification (Nova Lite) | 7.3 | ⏳ Pending |
+| 7.4 | Vectors | Theme classification (Nova Lite) | 7.3, `lite_client.py` ✅ | ⏳ Pending |
 | 7.5 | Vectors | Contradiction detection | 7.2, 4.3 | ⏳ Pending |
 | 10.4 | Planning | Agent reallocation triggers | 4.5, 5.5 | ⏳ Pending |
 | 10.5 | Planning | Mission stopping criteria | 4.5, 4.3 | ⏳ Pending |
-| 11.4 | Orchestration | Agent result aggregation | 5.4, 6.1, 4.5 | ⏳ Pending |
+| 11.4 | Orchestration | Agent result aggregation | 5.4, 6.1 ✅, 4.5 | ⏳ Pending |
 | 12.1 | Synthesis | Clustering algorithm + cluster labels | 7.3, 7.4 | ⏳ Pending |
 | 12.2 | Synthesis | Final intelligence synthesis prompt | 4.3, 7.4, 7.5 | ⏳ Pending |
-| 12.3 | Synthesis | Spoken briefing via Sonic | 3.3, 12.2 | ⏳ Pending |
+| 12.3 | Synthesis | Spoken briefing via Sonic | 3.3 ✅, 12.2 | ⏳ Pending |
 
-**Total: 15 tasks — 0 Done, 15 Pending**
+**Total: 15 tasks — 2 Done, 13 Pending**
 
 ---
 
@@ -494,16 +495,17 @@ Your MarketPulse-AI project is essentially a proof of concept for everything Mis
 ## Quick Reference — Files You Own
 
 ```
-backend/evidence/
-  schemas.py
-  repository.py
+backend/evidence/                   ✅ Partial (6.1 + 6.4 done, Session 5)
+  __init__.py                       ✅ Done
+  schemas.py                        ✅ Done
+  repository.py                     ✅ Done
+  router.py                         ✅ Done
   screenshot.py
   scoring.py
   embedding_pipeline.py
   clustering.py
   theme_labeler.py
   contradictions.py
-backend/routers/evidence.py
 backend/orchestrator/
   reallocation.py
   stopping.py
@@ -512,5 +514,5 @@ backend/synthesis/
   pre_synthesis.py
   briefing.py
   spoken_briefing.py
-models/embedding_client.py
+backend/models/embedding_client.py  ⏳ Pending — start here (no deps, unblocks Manav's OpenSearch)
 ```

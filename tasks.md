@@ -4,26 +4,28 @@
 
 ## Implementation Progress
 
-**Last updated:** March 2026 — Session 4
+**Last updated:** March 2026 — Session 6
 
 | Phase | Tasks | Status | Owner |
 |-------|-------|--------|-------|
 | Phase 1 — Project Init | 1.1 Scaffold, 1.2 Deps, 1.3 Env Config, 1.4 CI | ✅ All Done | Bharath |
 | Phase 1 — War Room UI | 8.1 Scaffold, 8.2 Layout, 8.3 Voice Panel, 8.4 Agent Grid, 8.5 Evidence Board, 8.6 Timeline | ✅ All Done | Sariya |
 | Phase 1 — Frontend State | 9.3 Zustand store + TypeScript types | ✅ Done | Sariya |
-| Phase 1 — WebSocket Hook | 8.7 WS hook (reconnection logic) | 🔄 Placeholder — needs live backend | Sariya |
+| Phase 1 — WebSocket Hook | 8.7 WS hook (reconnection + EVIDENCE_FOUND payload fix) | ✅ Done | Sariya |
 | Phase 2 — AWS Infra | 2.7 Docker Compose ✅, 2.1–2.5 VPC/ECS/Redis/Postgres/S3/OpenSearch, 2.6 IAM | 🔄 1/7 Done | Manav / Bharath |
-| Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway, 3.4 VAD, 3.5 barge-in | 🔄 2/5 Done | Chinmay |
-| Phase 4 — Orchestrator | 4.4 Nova Lite client ✅, 4.1 State machine, 4.2 CRUD API, 4.3 context builder, 4.5 planning loop | 🔄 1/5 Done | Manav |
+| Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway ✅ (multi-turn, interrupt, trigger_response) | ✅ 3/5 Done | Chinmay |
+| Phase 4 — Orchestrator | 4.4 Nova Lite ✅, 4.1 State machine ✅, 4.2 CRUD API ✅ (PATCH enforces valid transitions), 4.3, 4.5 | 🔄 3/5 Done | Bharath / Manav |
 | Phase 5 — Browser Agents | 5.1–5.5 Session manager, pool, prompts, evidence emission, lifecycle | ⏳ Pending | Chinmay |
-| Phase 6 — Evidence | 6.1–6.4 Schema, storage, scoring, list API | ⏳ Pending | Rahil |
+| Phase 6 — Evidence | 6.1–6.4 Schema, ingest, list API ✅ (created_at alias for frontend) | 🔄 2/4 Done | Rahil |
 | Phase 7 — Vectors | 7.1–7.5 Embeddings, pipeline, clustering, themes, contradiction detection | ⏳ Pending | Rahil |
-| Phase 8 — WS Streaming | 9.1 Redis channels, 9.2 WS relay, 9.4 Backpressure | ⏳ Pending | Manav / Sariya |
+| Phase 8 — WS Streaming | 9.1 Redis channels ✅, 9.2 WS relay ✅, 9.4 Backpressure | 🔄 2/3 Done | Bharath / Sariya |
 | Phase 9 — Agent Orch. | 10.1–10.5 Decomp, graph, assignment, realloc, stopping | ⏳ Pending | Chinmay / Rahil |
 | Phase 10 — Commands | 11.1–11.4 Command protocol, watchdog, parallel dispatch, aggregation | ⏳ Pending | Chinmay / Rahil |
 | Phase 11 — Synthesis | 12.1–12.3 Clustering, briefing prompt, spoken delivery | ⏳ Pending | Rahil |
 | Phase 12 — Observability | 13.1–13.5 Logging, metrics, dashboards, tracing, DLQ | ⏳ Pending | Bharath / Manav / Sariya |
 | Phase 13 — Demo | 14.1–14.5 Demo script, mock mode, reset endpoint, diagram, load test | ⏳ Pending | Bharath |
+
+**Session 6 — E2E bug fixes & integration tests:** EVIDENCE_FOUND payload fixed in frontend (use payload not payload.evidence); evidence API and Redis publish include `created_at` alias; Voice Gateway handles text frames (interrupt), multi-turn loop, and `trigger_response()` after tool results; PATCH /missions enforces valid state transitions (409 for invalid); `backend/tests/test_integration.py` — 43 tests covering health, mission CRUD, state machine, evidence ingest/list, WS relay, SonicSession.trigger_response.
 
 ### What Is Live Right Now
 
@@ -47,6 +49,7 @@ backend/
   pyproject.toml      13 runtime deps (added openai, tenacity, websockets)
   tests/
     test_smoke.py     async health check — passing
+    test_integration.py 43 tests — mission CRUD, state machine, evidence, WS relay, SonicSession
 
 frontend/
   src/
@@ -244,7 +247,7 @@ Sent to Nova Lite each planning cycle. Never includes full conversation history.
 |--------|------|-------------|--------------|----------|
 | POST | `/missions` | Create mission (orchestrator may call after `start_mission` tool) | `{ "objective": string }` | `{ "id": UUID, "status": "PENDING", ... }` |
 | GET | `/missions/{id}` | Get mission + task graph + latest evidence count | — | `MissionRecord` + optional `tasks[]`, `evidence_count` |
-| PATCH | `/missions/{id}` | Update status, attach briefing | `{ "status"?, "briefing"? }` | Updated `MissionRecord` |
+| PATCH | `/missions/{id}` | Update status, attach briefing | `{ "status"?, "briefing"? }` | Updated `MissionRecord` (409 if invalid state transition) |
 | GET | `/missions/{id}/evidence` | Paginated evidence | `?limit=20&offset=0&theme=` | `{ "items": EvidenceRecord[], "total": int }` |
 | GET | `/missions/{id}/tasks` | Task list for mission | — | `TaskNode[]` |
 | POST | `/evidence` | Ingest evidence (called by agent runtime) | `EvidenceRecord` (without id) | `{ "id": UUID }` |
@@ -260,7 +263,7 @@ Sent to Nova Lite each planning cycle. Never includes full conversation history.
 | Type | Payload | Description |
 |------|---------|-------------|
 | `AGENT_UPDATE` | `{ agent_id, status, task_id?, objective?, site_url?, screenshot_url? }` | Agent state change |
-| `EVIDENCE_FOUND` | `{ evidence: EvidenceRecord }` | New evidence card |
+| `EVIDENCE_FOUND` | `EvidenceRecord` (payload is the object directly; includes `created_at` alias) | New evidence card |
 | `MISSION_STATUS` | `{ mission_id, status, evidence_count, active_agents }` | Mission state |
 | `VOICE_TRANSCRIPT` | `{ role: "user"|"assistant", text, is_final?: boolean }` | Live transcript |
 | `BRIEFING_CHUNK` | `{ text, done?: boolean }` | Streaming final briefing |

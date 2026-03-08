@@ -32,7 +32,8 @@ export function useWebSocket(missionId: string | null) {
             updateAgent(msg.payload);
             break;
           case "EVIDENCE_FOUND":
-            addEvidence(msg.payload.evidence);
+            // Backend publishes the evidence dict directly as payload (not nested under .evidence)
+            addEvidence(msg.payload);
             break;
           case "TIMELINE_EVENT":
             addTimelineEvent(msg.payload);

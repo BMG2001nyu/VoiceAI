@@ -184,7 +184,7 @@ class LiteClient:
         if api_key is None:
             # Lazy import to avoid circular dependency at module load time
             try:
-                from backend.config import settings  # type: ignore[import]
+                from config import settings  # type: ignore[import]
 
                 api_key = settings.nova_api_key or None
             except Exception:

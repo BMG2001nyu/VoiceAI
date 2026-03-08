@@ -308,6 +308,9 @@ class SonicSession:
         The result can be any JSON-serialisable value; it is converted to a
         string before sending.
 
+        After submitting the tool result you MUST call ``trigger_response()``
+        so Sonic generates its follow-up reply.
+
         Args:
             call_id: The ``call_id`` from the ``tool_call`` event.
             result:  The tool's return value (dict, list, str, etc.).
@@ -325,6 +328,15 @@ class SonicSession:
             }
         )
         logger.debug("Submitted tool result for call_id=%s", call_id)
+
+    async def trigger_response(self) -> None:
+        """Send ``response.create`` to make Sonic generate its next reply.
+
+        Must be called after ``submit_tool_result()`` — the Nova Realtime API
+        does not auto-generate a response after function_call_output items.
+        """
+        await self._send({"type": "response.create"})
+        logger.debug("Triggered new response")
 
     async def interrupt(self) -> None:
         """Signal Sonic to stop the current response (barge-in support).
@@ -485,7 +497,7 @@ class SonicClient:
     ) -> None:
         if api_key is None:
             try:
-                from backend.config import settings  # type: ignore[import]
+                from config import settings  # type: ignore[import]
 
                 api_key = settings.nova_api_key or None
             except Exception:
