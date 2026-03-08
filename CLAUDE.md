@@ -4,6 +4,60 @@ This file is the single source of truth for getting your local environment runni
 
 ---
 
+## Current Implementation Status
+
+**Last updated:** March 2026 — Session 2
+
+### What Is Done
+
+| Area | Status | Key Files |
+|------|--------|-----------|
+| Monorepo scaffold | ✅ Done | All dirs, `.gitignore`, `README.md` |
+| Backend deps | ✅ Done | `backend/pyproject.toml` (all 10 runtime deps + dev extras) |
+| Frontend deps | ✅ Done | `frontend/package.json`, `package-lock.json`, `tsconfig.json` |
+| Env config | ✅ Done | `.env.example`, `docs/ENV.md`, `backend/config.py` |
+| CI pipeline | ✅ Done | `.github/workflows/ci.yml` (4 parallel jobs, green) |
+| Backend health endpoint | ✅ Done | `GET /health → {"status": "ok"}` in `backend/main.py` |
+| Backend smoke test | ✅ Done | `backend/tests/test_smoke.py` — passing |
+| War Room UI | ✅ Done | Full dark war room layout, all panels rendered with mock data |
+| TypeScript types | ✅ Done | `frontend/src/types/api.ts` — all schemas (Mission, Agent, Evidence, Timeline) |
+| Zustand store | ✅ Done | `frontend/src/store/index.ts` — seeded with Sequoia demo mission |
+| WebSocket hook | 🔄 Partial | `frontend/src/hooks/useWebSocket.ts` — reconnection logic ready, needs live backend |
+| AWS Infra | ⏳ Pending | Manav — Tasks 2.1–2.7 |
+| Voice Gateway | ⏳ Pending | Chinmay — Tasks 3.1–3.5 |
+| Mission Orchestrator | ⏳ Pending | Manav — Tasks 4.1–4.5 |
+| Browser Agents | ⏳ Pending | Chinmay — Tasks 5.1–5.5 |
+| Evidence Layer | ⏳ Pending | Rahil — Tasks 6.1–6.4 |
+| Vector / Embeddings | ⏳ Pending | Rahil — Tasks 7.1–7.5 |
+| WS Streaming (backend) | ⏳ Pending | Manav + Sariya — Tasks 9.1–9.4 |
+| Synthesis | ⏳ Pending | Rahil — Tasks 12.1–12.3 |
+| Observability | ⏳ Pending | Bharath + Manav — Tasks 13.1–13.5 |
+| Demo scripts | ⏳ Pending | Bharath — Tasks 14.1–14.5 |
+
+### Run the UI Right Now (No Backend Required)
+
+The War Room UI runs standalone with seeded mock data:
+
+```bash
+cd frontend
+npm install  # already done; only needed on fresh clone
+npm run dev
+# Open http://localhost:5173
+```
+
+You will see the full war room: 6 agent tiles (4 active), 3 evidence cards across 3 themes, 7 timeline events, voice panel with mic toggle and waveform animation.
+
+### Run the Backend
+
+```bash
+cd backend
+source venv/bin/activate   # or: python3 -m venv venv && source venv/bin/activate && pip install -e ".[dev]"
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# GET http://localhost:8000/health → {"status": "ok"}
+```
+
+---
+
 ## Team Task Files
 
 Find your name below and open your task file first. Every task has full implementation notes, file paths, and coordination notes telling you what you need from other teammates.
@@ -147,7 +201,9 @@ pytest tests/test_smoke.py -v
 
 ## Step 5 — Local Services (Docker Compose)
 
-This starts Redis, Postgres, and MinIO (local S3) so you can run the backend without an AWS account for most tasks.
+> ⚠️ **Status: Pending** — `docker-compose.yml` has not been created yet (Bharath Task 2.7, blocked on Manav's schema). Check `team-tasks/bharath-gera.md` for current status before attempting this step. Skip to Step 6 if you only need the frontend UI.
+
+When available, this will start Redis, Postgres, and MinIO (local S3) so you can run the backend without an AWS account for most tasks.
 
 ```bash
 # From the repo root
@@ -157,7 +213,7 @@ docker compose up -d
 docker compose ps
 ```
 
-Expected output:
+Expected output once the file exists:
 
 ```
 NAME         STATUS          PORTS
@@ -189,24 +245,22 @@ DEMO_MODE=true
 ```bash
 cd frontend
 
-npm install
+npm install   # installs react, zustand, tailwindcss, lucide-react, etc.
 
 # Verify
 npm run build
+npm run test -- --run   # should pass
 ```
 
-Copy the frontend env:
+Create a frontend env file:
 
 ```bash
-cp .env.example .env.local
-```
-
-`.env.local`:
-
-```env
+# frontend/.env.local  (gitignored)
 VITE_API_URL=http://localhost:8000
 VITE_WS_URL=ws://localhost:8000
 ```
+
+> **Note:** The War Room UI already renders a fully-functional mock of the war room without any backend. Run `npm run dev` and open http://localhost:5173 to see it. The Zustand store is seeded with demo data (Sequoia mission, 6 agents, evidence cards, timeline events).
 
 ---
 
@@ -236,29 +290,38 @@ cd frontend
 npm run dev
 ```
 
-Visit [http://localhost:5173](http://localhost:5173) — the War Room UI will load.
+Visit [http://localhost:5173](http://localhost:5173) — the War Room UI loads immediately with mock demo data. No backend required to see the full UI. When the backend WebSocket endpoints are live (Chinmay's `/ws/voice` and Manav's `/ws/mission/{id}`), the `useWebSocket` hook will connect automatically and replace the mock data with live events.
 
 ---
 
 ## Step 9 — Run in Demo Mode (No AWS Required)
 
-If you do not have AWS credentials yet, or want to test UI and backend integration without calling Bedrock:
+> ⚠️ **Status: Partial** — The frontend runs in demo mode automatically right now (seeded with mock data, no backend needed). The full backend demo mode (`demo/seed_sequoia.py`, `demo/mock_evidence.json`) is pending Bharath Tasks 14.1–14.2 and requires Docker Compose to be live.
+
+If you do not have AWS credentials yet, or want to test UI and backend integration without calling Bedrock, set:
 
 ```bash
 # In your .env
 DEMO_MODE=true
 ```
 
-With `DEMO_MODE=true`:
+With `DEMO_MODE=true` (once backend demo is implemented):
 - Nova Sonic is stubbed with canned responses
 - Browser agents emit mock evidence from `demo/mock_evidence.json`
 - No real Bedrock calls are made
 - Redis and Postgres are still required (Docker Compose handles these)
 
-Start a demo mission:
+Start a demo mission (once `demo/` scripts exist):
 
 ```bash
 python demo/seed_sequoia.py
+```
+
+**Right now**, the fastest way to see a working demo is:
+
+```bash
+cd frontend && npm run dev
+# Open http://localhost:5173 — full war room with live mock data
 ```
 
 ---
@@ -268,14 +331,14 @@ python demo/seed_sequoia.py
 ### Backend
 
 ```bash
-# Run backend dev server
-uvicorn backend.main:app --reload
+# Run backend dev server (from backend/ with venv active)
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Run all backend tests
+# Run all backend tests (currently: smoke test only)
 pytest backend/tests/ -v
 
-# Run specific test file
-pytest backend/tests/test_missions.py -v
+# Run smoke test specifically
+pytest backend/tests/test_smoke.py -v
 
 # Lint and format check
 ruff check backend/ models/ agents/
@@ -358,74 +421,96 @@ wscat -c "ws://localhost:8000/ws/mission/<id>"
 
 ## Repository Structure
 
+Files marked `✅` exist and are functional. Files marked `⏳` are planned but not yet created.
+
 ```
 VoiceAI/
-├── tasks.md                    # Full system engineering plan
-├── CLAUDE.md                   # This file
-├── .env.example                # Template for environment variables
-├── docker-compose.yml          # Local dev services (Redis, Postgres, MinIO)
+├── tasks.md                    ✅ Full system engineering plan (with progress tracker)
+├── CLAUDE.md                   ✅ This file
+├── .env.example                ✅ 13 placeholder env vars
+├── docker-compose.yml          ⏳ Pending (Bharath Task 2.7)
 │
-├── team-tasks/                 # Individual task files — read yours first
-│   ├── bharath-gera.md
-│   ├── manav-parikh.md
-│   ├── rahil-singhi.md
-│   ├── chinmay-shringi.md
-│   └── sariya-rizwan.md
+├── team-tasks/                 ✅ All task files updated with current status
+│   ├── bharath-gera.md         ✅ 4/12 tasks done
+│   ├── manav-parikh.md         ✅ 0/14 tasks (all pending)
+│   ├── rahil-singhi.md         ✅ 0/15 tasks (all pending)
+│   ├── chinmay-shringi.md      ✅ 0/16 tasks (all pending)
+│   └── sariya-rizwan.md        ✅ 7/11 tasks done
 │
-├── backend/                    # FastAPI backend
-│   ├── main.py                 # App entrypoint
-│   ├── config.py               # Settings (Pydantic)
-│   ├── logging_config.py       # Structlog setup
-│   ├── missions/               # Mission state machine + CRUD
-│   ├── orchestrator/           # Planning loop, context builder
-│   ├── evidence/               # Evidence ingest, scoring, clustering
-│   ├── gateway/                # Voice gateway, WebSocket relay
-│   ├── synthesis/              # Briefing generation
-│   ├── routers/                # FastAPI routers
-│   └── tests/                  # Pytest test suite
+├── .github/
+│   └── workflows/
+│       └── ci.yml              ✅ 4 parallel jobs — green
 │
-├── agents/                     # Browser agent system
-│   ├── browser_session.py      # Nova Act session manager
-│   ├── pool.py                 # Agent pool
-│   ├── lifecycle.py            # State + heartbeat
-│   ├── evidence_emitter.py     # Evidence extraction + POST
-│   ├── command_channel.py      # Redis command consumer
-│   └── prompts/                # Per-agent-type system prompts
+├── backend/
+│   ├── main.py                 ✅ FastAPI app + GET /health
+│   ├── config.py               ✅ Pydantic Settings class (reads .env)
+│   ├── pyproject.toml          ✅ All Python deps pinned
+│   ├── logging_config.py       ⏳ Pending (Bharath Task 13.1)
+│   ├── missions/               ⏳ Pending (Manav Tasks 4.1–4.2)
+│   ├── orchestrator/           ⏳ Pending (Manav Tasks 4.3–4.5)
+│   ├── evidence/               ⏳ Pending (Rahil Tasks 6.1–6.4)
+│   ├── gateway/                ⏳ Pending (Chinmay Task 3.3)
+│   ├── synthesis/              ⏳ Pending (Rahil Tasks 12.1–12.3)
+│   ├── routers/                ⏳ Pending
+│   ├── streaming/              ⏳ Pending (Manav Task 9.1)
+│   └── tests/
+│       ├── __init__.py         ✅
+│       └── test_smoke.py       ✅ async health check — passing
 │
-├── models/                     # Model wrappers
-│   ├── sonic_client.py         # Nova Sonic streaming
-│   ├── sonic_tools.py          # Tool schema definitions
-│   ├── lite_client.py          # Nova Lite (orchestrator)
-│   └── embedding_client.py     # Nova Multimodal Embeddings
+├── agents/
+│   └── prompts/                ✅ directory exists (Chinmay to populate Task 5.3)
 │
-├── frontend/                   # React + Vite War Room UI
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── store/              # Zustand state
-│   │   ├── hooks/              # WebSocket, throttle
-│   │   ├── components/         # UI components
-│   │   └── types/              # TypeScript API types
-│   └── vite.config.ts
+├── models/                     ✅ directory exists
+│   ├── sonic_client.py         ⏳ Pending (Chinmay Task 3.1)
+│   ├── sonic_tools.py          ⏳ Pending (Chinmay Task 3.2)
+│   ├── lite_client.py          ⏳ Pending (Manav Task 4.4)
+│   └── embedding_client.py     ⏳ Pending (Rahil Task 7.1)
 │
-├── infra/                      # AWS CDK or Terraform
-│   ├── cdk/                    # CDK stacks
-│   └── init.sql                # Postgres schema
+├── frontend/
+│   ├── package.json            ✅ All deps (react, zustand, tanstack, tailwindcss, lucide-react…)
+│   ├── tsconfig.json           ✅
+│   ├── vite.config.ts          ✅ vitest jsdom config
+│   ├── tailwind.config.ts      ✅ war room color palette
+│   ├── postcss.config.js       ✅
+│   ├── eslint.config.js        ✅ ESLint 9 flat config
+│   ├── index.html              ✅
+│   └── src/
+│       ├── main.tsx            ✅
+│       ├── App.tsx             ✅ renders WarRoomLayout
+│       ├── App.test.tsx        ✅ Vitest smoke test — passing
+│       ├── index.css           ✅ Tailwind base + war room styles
+│       ├── types/
+│       │   └── api.ts          ✅ TypeScript interfaces (all schemas)
+│       ├── store/
+│       │   └── index.ts        ✅ Zustand store (seeded with Sequoia demo data)
+│       ├── hooks/
+│       │   └── useWebSocket.ts ✅ WS hook with exponential-backoff reconnect
+│       └── components/
+│           ├── layout/
+│           │   ├── WarRoomLayout.tsx  ✅ CSS grid, 100vh, 4 regions
+│           │   └── Header.tsx         ✅ brand, mission badge, connection dot
+│           ├── StatusBadge.tsx        ✅ IDLE/ASSIGNED/BROWSING/REPORTING pills
+│           ├── AgentTile.tsx          ✅ card + scanning animation
+│           ├── AgentGrid.tsx          ✅ 2-col grid of 6 tiles
+│           ├── EvidenceCard.tsx       ✅ confidence meter, theme pill, source
+│           ├── EvidenceBoard.tsx      ✅ scrollable + theme filter
+│           ├── MissionTimeline.tsx    ✅ 7 event types + lucide icons
+│           └── VoicePanel.tsx         ✅ mic toggle, 60fps waveform, transcript
 │
-├── demo/                       # Demo scenario scripts
-│   ├── seed_sequoia.py         # Start the Sequoia demo mission
-│   ├── mock_evidence.json      # Offline evidence dataset
-│   ├── run_demo.sh             # One-command demo launcher
-│   └── load_test.py            # 10-mission parallel load test
+├── infra/
+│   ├── cdk/                    ✅ directory exists (Manav to populate)
+│   └── init.sql                ⏳ Pending (Bharath Task 2.7)
 │
-└── docs/                       # Technical documentation
-    ├── ENV.md                  # Environment variable reference
-    ├── EVENTS.md               # Redis pub/sub event formats
-    ├── VOICE_FORMAT.md         # Audio format for voice WebSocket
-    ├── IAM.md                  # AWS IAM permissions reference
-    ├── LOGGING.md              # Structured log format
-    ├── DEMO.md                 # Demo operator guide
-    ├── FRONTEND_STREAMING.md   # WS batching + backpressure
-    └── architecture.png        # System diagram
+├── demo/                       ⏳ Pending (Bharath Tasks 14.x)
+│
+└── docs/
+    ├── ENV.md                  ✅ Full variable reference
+    ├── EVENTS.md               ⏳ Pending (Manav Task 9.1)
+    ├── VOICE_FORMAT.md         ⏳ Pending (Chinmay Task 3.4)
+    ├── IAM.md                  ⏳ Pending (Bharath Task 2.6)
+    ├── LOGGING.md              ⏳ Pending (Bharath Task 13.1)
+    ├── DEMO.md                 ⏳ Pending (Bharath Task 14.1)
+    └── FRONTEND_STREAMING.md   ⏳ Pending (Sariya Task 9.4)
 ```
 
 ---
@@ -477,7 +562,7 @@ These are the cross-team touchpoints most likely to cause merge conflicts or blo
 | Mission WebSocket relay live (`/ws/mission/{id}`) | Sariya | Sariya can test live evidence streaming |
 | `models/lite_client.py` exists | Manav (creates it in Task 4.4) | Chinmay (task decomposition, Task 10.1), Rahil (theme labeller, Task 7.4) |
 | `models/embedding_client.py` exists + dimension constant exported | Rahil | Manav (OpenSearch index dimension, Task 2.5) |
-| Docker Compose up | Bharath | Everyone |
+| Docker Compose up (`docker-compose.yml` created — Task 2.7) | Bharath | Everyone needing local Redis/Postgres |
 
 **Communication**: when you start a task that another person depends on, drop a note in the team chat with the expected interface (endpoint path, function signature, or message format) so they can build against it while you implement.
 
@@ -530,4 +615,6 @@ The request body does not match `EvidenceIngest` schema. Check required fields: 
 
 ---
 
-*Last updated: March 2026. Questions? Ask Bharath or drop a message in the team chat.*
+*Last updated: March 2026 — Session 2. Questions? Ask Bharath or drop a message in the team chat.*
+
+**Quick status:** Phase 1 complete (scaffold + CI + UI). Waiting on Manav (AWS infra), Chinmay (voice gateway + agent prompts), and Rahil (embedding client dimension) to unblock Phases 2–6. See `tasks.md` → Implementation Progress for the full tracker.

@@ -7,6 +7,40 @@
 
 ---
 
+## Implementation Status
+
+**Last updated:** March 2026
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 6.1 Evidence Schema + Ingest API | ⏳ Pending | Depends on Manav's Postgres (2.3) and Redis (2.2) |
+| 6.2 Screenshot S3 Upload | ⏳ Pending | Depends on 6.1 and Manav's S3 bucket (2.4) |
+| 6.3 Confidence + Novelty Scoring | ⏳ Pending | Depends on 6.1; novelty needs Phase 7.2 |
+| 6.4 Evidence List API | ⏳ Pending | Depends on 6.1 — unblocks Sariya's Evidence Board |
+| 7.1 Embedding Client | ⏳ Pending | Coordinate with Manav on dimension before he creates OpenSearch index (2.5) |
+| 7.2 Embedding Pipeline | ⏳ Pending | Depends on 7.1, 6.1, Manav's OpenSearch (2.5) |
+| 7.3 Semantic Clustering | ⏳ Pending | Depends on 7.2 |
+| 7.4 Theme Classification | ⏳ Pending | Depends on 7.3; needs `models/lite_client.py` from Manav (4.4) |
+| 7.5 Contradiction Detection | ⏳ Pending | Depends on 7.2, 4.3 |
+| 10.4 Agent Reallocation Triggers | ⏳ Pending | Depends on 4.5, 5.5 |
+| 10.5 Mission Stopping Criteria | ⏳ Pending | Depends on 4.5, 4.3 |
+| 11.4 Agent Result Aggregation | ⏳ Pending | Depends on 5.4, 6.1, 4.5 |
+| 12.1 Clustering + Cluster Labels | ⏳ Pending | Depends on 7.3, 7.4 |
+| 12.2 Final Intelligence Synthesis | ⏳ Pending | Depends on 4.3, 7.4, 7.5 |
+| 12.3 Spoken Briefing via Sonic | ⏳ Pending | Depends on Chinmay's gateway (3.3) and 12.2 |
+
+### What You Need First
+
+The TypeScript types for your evidence schema are already defined in `frontend/src/types/api.ts` — use these as the source of truth when writing your Pydantic models in `backend/evidence/schemas.py` so field names stay in sync with Sariya's UI.
+
+**Your critical path:** 7.1 (embedding client) → tell Manav the `EMBEDDING_DIMENSION` constant → he creates the OpenSearch index → then 6.1 → 7.2 can run in parallel.
+
+**Share with Manav early:** `EMBEDDING_DIMENSION` from `models/embedding_client.py` — he needs it before provisioning OpenSearch (Task 2.5).
+
+**Share with Chinmay early:** The `POST /internal/deliver-briefing` contract (Task 12.3) — he builds against this in his voice gateway (Task 3.3).
+
+---
+
 ## Why These Tasks
 
 Your MarketPulse-AI project is essentially a proof of concept for everything Mission Control needs in its evidence layer: real-time data ingestion, RAG-based retrieval, embedding + ranking, and confidence scoring. You own the full data path from "agent emits a finding" through "embedding stored in vector index" through "final intelligence synthesis." You also own the planning-layer logic for reallocation and stopping, and the agent command aggregation path.
@@ -15,25 +49,25 @@ Your MarketPulse-AI project is essentially a proof of concept for everything Mis
 
 ## Task Summary
 
-| Task | Phase | Description | Depends On |
-|------|-------|-------------|------------|
-| 6.1 | Evidence | Evidence schema, storage, ingest API | 2.3 |
-| 6.2 | Evidence | Screenshot capture + S3 upload | 6.1, 2.4 |
-| 6.3 | Evidence | Confidence + novelty scoring | 6.1, Phase 7 |
-| 6.4 | Evidence | Evidence list API (paginated, theme filter) | 6.1 |
-| 7.1 | Vectors | Nova Multimodal Embeddings client | Phase 1, Bedrock access |
-| 7.2 | Vectors | Embedding pipeline on evidence ingest | 7.1, 6.1, 2.5 |
-| 7.3 | Vectors | Semantic clustering endpoint | 7.2 |
-| 7.4 | Vectors | Theme classification (Nova Lite) | 7.3 |
-| 7.5 | Vectors | Contradiction detection | 7.2, 4.3 |
-| 10.4 | Planning | Agent reallocation triggers | 4.5, 5.5 |
-| 10.5 | Planning | Mission stopping criteria | 4.5, 4.3 |
-| 11.4 | Orchestration | Agent result aggregation | 5.4, 6.1, 4.5 |
-| 12.1 | Synthesis | Clustering algorithm + cluster labels | 7.3, 7.4 |
-| 12.2 | Synthesis | Final intelligence synthesis prompt | 4.3, 7.4, 7.5 |
-| 12.3 | Synthesis | Spoken briefing via Sonic | 3.3, 12.2 |
+| Task | Phase | Description | Depends On | Status |
+|------|-------|-------------|------------|--------|
+| 6.1 | Evidence | Evidence schema, storage, ingest API | 2.3 | ⏳ Pending |
+| 6.2 | Evidence | Screenshot capture + S3 upload | 6.1, 2.4 | ⏳ Pending |
+| 6.3 | Evidence | Confidence + novelty scoring | 6.1, Phase 7 | ⏳ Pending |
+| 6.4 | Evidence | Evidence list API (paginated, theme filter) | 6.1 | ⏳ Pending |
+| 7.1 | Vectors | Nova Multimodal Embeddings client | Phase 1, Bedrock access | ⏳ Pending |
+| 7.2 | Vectors | Embedding pipeline on evidence ingest | 7.1, 6.1, 2.5 | ⏳ Pending |
+| 7.3 | Vectors | Semantic clustering endpoint | 7.2 | ⏳ Pending |
+| 7.4 | Vectors | Theme classification (Nova Lite) | 7.3 | ⏳ Pending |
+| 7.5 | Vectors | Contradiction detection | 7.2, 4.3 | ⏳ Pending |
+| 10.4 | Planning | Agent reallocation triggers | 4.5, 5.5 | ⏳ Pending |
+| 10.5 | Planning | Mission stopping criteria | 4.5, 4.3 | ⏳ Pending |
+| 11.4 | Orchestration | Agent result aggregation | 5.4, 6.1, 4.5 | ⏳ Pending |
+| 12.1 | Synthesis | Clustering algorithm + cluster labels | 7.3, 7.4 | ⏳ Pending |
+| 12.2 | Synthesis | Final intelligence synthesis prompt | 4.3, 7.4, 7.5 | ⏳ Pending |
+| 12.3 | Synthesis | Spoken briefing via Sonic | 3.3, 12.2 | ⏳ Pending |
 
-**Total: 15 tasks**
+**Total: 15 tasks — 0 Done, 15 Pending**
 
 ---
 

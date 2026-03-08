@@ -8,6 +8,54 @@
 
 ---
 
+## Implementation Status
+
+**Last updated:** March 2026
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 3.1 Sonic Streaming Wrapper | ⏳ Pending | Needs Bedrock Nova Sonic model access |
+| 3.2 Sonic Tool Schemas | ⏳ Pending | Depends on 3.1 |
+| 3.3 Voice Gateway FastAPI + WS | ⏳ Pending | Depends on 3.1, 3.2, Manav's 4.2 — critical unblocking task for Sariya |
+| 3.4 Audio Chunking + VAD | ⏳ Pending | Optional; skip for demo if time-pressed |
+| 3.5 Barge-in / Interruption | ⏳ Pending | Depends on 3.3 |
+| 5.1 Nova Act Session Manager | ⏳ Pending | Check current AgentCore Browser / Nova Act SDK availability |
+| 5.2 Agent Pool | ⏳ Pending | Depends on 5.1, Manav's Redis (2.2) |
+| 5.3 Agent Prompts (6 types) | ⏳ Pending | Can start now — `agents/prompts/` dir exists |
+| 5.4 Evidence Emission | ⏳ Pending | Depends on 5.1, Rahil's `POST /evidence` (6.1) |
+| 5.5 Agent Lifecycle + Heartbeat | ⏳ Pending | Depends on 5.2, 4.5 |
+| 10.1 Task Decomposition Prompt | ⏳ Pending | Coordinate with Manav on `task_planner.py` (4.4) |
+| 10.2 Task Graph Dependency Res. | ⏳ Pending | Depends on 4.4, 4.5 |
+| 10.3 Agent-to-Task Assignment | ⏳ Pending | Depends on 5.2, 4.5 |
+| 11.1 Agent Command Protocol | ⏳ Pending | Depends on 5.2, Manav's 4.5 |
+| 11.2 Heartbeat Watchdog | ⏳ Pending | Depends on 5.5, 9.1 |
+| 11.3 Parallel Deployment | ⏳ Pending | Depends on 11.1, 10.3 |
+
+### What You Can Start Now
+
+**Task 5.3 (Agent Prompts)** has no dependencies and can be done immediately — the `agents/prompts/` directory exists. Write the six `.txt` files and `__init__.py` loader. These are pure text files; no backend needed.
+
+**Task 10.1 (Decomposition Prompt)** — the few-shot example for the Sequoia mission is already in your task spec. Write `agents/prompts/task_decomposition.txt` and coordinate with Manav so he can plug it into `task_planner.py` (Task 4.4).
+
+### What You Need First
+
+The foundation is already in place from Bharath (Phase 1):
+- `backend/config.py` — `settings.BEDROCK_MODEL_SONIC`, `settings.AWS_REGION` ready
+- `backend/main.py` — FastAPI app; mount your `voice_gateway.py` router here
+- `backend/pyproject.toml` — `boto3`, `httpx`, `asyncpg`, `redis` already pinned
+
+The UI is already built by Sariya (Phase 1 UI):
+- `VoicePanel.tsx` — mic button, waveform, transcript feed — all wired to send to `/ws/voice`
+- `useWebSocket.ts` — will connect to your `/ws/mission/{id}` endpoint automatically once it's live
+
+### Coordination With Sariya
+
+Your `/ws/voice` endpoint is what her VoicePanel connects to. Coordinate on:
+- Message format: `{ "type": "VOICE_TRANSCRIPT", "role": "assistant", "text": "...", "is_final": bool }` — already matched in her `useWebSocket.ts` dispatch
+- Audio format: PCM 16-bit 16 kHz — write `docs/VOICE_FORMAT.md` so she can configure `MediaRecorder` correctly
+
+---
+
 ## Why These Tasks
 
 Your breadth across Python backend and TypeScript, plus experience with browser-level tooling and open-source systems (fossology is production-grade browser-crawling adjacent work), makes you the right person to own the two most technically complex integration layers: the Voice Gateway (where Bedrock Sonic meets a live WebSocket) and the Browser Agent Fleet (where Nova Act sessions meet the orchestrator's command channel). You also own the task decomposition logic that bridges them.
@@ -16,26 +64,26 @@ Your breadth across Python backend and TypeScript, plus experience with browser-
 
 ## Task Summary
 
-| Task | Phase | Description | Depends On |
-|------|-------|-------------|------------|
-| 3.1 | Voice | Bedrock Converse streaming wrapper (Sonic) | Phase 1, Bedrock access |
-| 3.2 | Voice | Sonic tool schema definitions | 3.1 |
-| 3.3 | Voice | Voice Gateway FastAPI + WebSocket | 3.1, 3.2, Phase 4 |
-| 3.4 | Voice | Audio chunking and VAD | 3.3 |
-| 3.5 | Voice | Barge-in / interruption handling | 3.3 |
-| 5.1 | Agents | Nova Act / AgentCore Browser session manager | Phase 2, Bedrock |
-| 5.2 | Agents | Agent pool and concurrency control | 5.1 |
-| 5.3 | Agents | Source-specialized agent prompts (6 types) | 5.1 |
-| 5.4 | Agents | Structured evidence emission interface | 5.1, Phase 6 |
-| 5.5 | Agents | Agent lifecycle and heartbeat | 5.2, 4.5 |
-| 10.1 | Planning | Task decomposition prompt engineering | 4.4 |
-| 10.2 | Planning | Task graph dependency resolution | 4.4, 4.5 |
-| 10.3 | Planning | Agent-to-task assignment algorithm | 5.2, 4.5 |
-| 11.1 | Orchestration | Agent command protocol | 5.2, 4.5 |
-| 11.2 | Orchestration | Heartbeat timeout watchdog | 5.5, 9.1 |
-| 11.3 | Orchestration | Parallel deployment (asyncio) | 11.1 |
+| Task | Phase | Description | Depends On | Status |
+|------|-------|-------------|------------|--------|
+| 3.1 | Voice | Bedrock Converse streaming wrapper (Sonic) | Phase 1, Bedrock access | ⏳ Pending |
+| 3.2 | Voice | Sonic tool schema definitions | 3.1 | ⏳ Pending |
+| 3.3 | Voice | Voice Gateway FastAPI + WebSocket | 3.1, 3.2, Phase 4 | ⏳ Pending |
+| 3.4 | Voice | Audio chunking and VAD | 3.3 | ⏳ Pending |
+| 3.5 | Voice | Barge-in / interruption handling | 3.3 | ⏳ Pending |
+| 5.1 | Agents | Nova Act / AgentCore Browser session manager | Phase 2, Bedrock | ⏳ Pending |
+| 5.2 | Agents | Agent pool and concurrency control | 5.1 | ⏳ Pending |
+| 5.3 | Agents | Source-specialized agent prompts (6 types) | 5.1 | ⏳ Pending |
+| 5.4 | Agents | Structured evidence emission interface | 5.1, Phase 6 | ⏳ Pending |
+| 5.5 | Agents | Agent lifecycle and heartbeat | 5.2, 4.5 | ⏳ Pending |
+| 10.1 | Planning | Task decomposition prompt engineering | 4.4 | ⏳ Pending |
+| 10.2 | Planning | Task graph dependency resolution | 4.4, 4.5 | ⏳ Pending |
+| 10.3 | Planning | Agent-to-task assignment algorithm | 5.2, 4.5 | ⏳ Pending |
+| 11.1 | Orchestration | Agent command protocol | 5.2, 4.5 | ⏳ Pending |
+| 11.2 | Orchestration | Heartbeat timeout watchdog | 5.5, 9.1 | ⏳ Pending |
+| 11.3 | Orchestration | Parallel deployment (asyncio) | 11.1 | ⏳ Pending |
 
-**Total: 16 tasks**
+**Total: 16 tasks — 0 Done, 16 Pending**
 
 ---
 

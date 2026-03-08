@@ -1,5 +1,63 @@
 # Mission Control (Dispatch) — Engineering Task Plan
 
+---
+
+## Implementation Progress
+
+**Last updated:** March 2026 — Session 2
+
+| Phase | Tasks | Status | Owner |
+|-------|-------|--------|-------|
+| Phase 1 — Project Init | 1.1 Scaffold, 1.2 Deps, 1.3 Env Config, 1.4 CI | ✅ All Done | Bharath |
+| Phase 1 — War Room UI | 8.1 Scaffold, 8.2 Layout, 8.3 Voice Panel, 8.4 Agent Grid, 8.5 Evidence Board, 8.6 Timeline | ✅ All Done | Sariya |
+| Phase 1 — Frontend State | 9.3 Zustand store + TypeScript types | ✅ Done | Sariya |
+| Phase 1 — WebSocket Hook | 8.7 WS hook (reconnection logic) | 🔄 Placeholder — needs live backend | Sariya |
+| Phase 2 — AWS Infra | 2.1–2.5 VPC/ECS/Redis/Postgres/S3/OpenSearch, 2.6 IAM, 2.7 Docker Compose | ⏳ Pending | Manav / Bharath |
+| Phase 3 — Voice Gateway | 3.1–3.5 Sonic client, tools, WS gateway, VAD, barge-in | ⏳ Pending | Chinmay |
+| Phase 4 — Orchestrator | 4.1–4.5 State machine, CRUD API, context builder, task graph, planning loop | ⏳ Pending | Manav |
+| Phase 5 — Browser Agents | 5.1–5.5 Session manager, pool, prompts, evidence emission, lifecycle | ⏳ Pending | Chinmay |
+| Phase 6 — Evidence | 6.1–6.4 Schema, storage, scoring, list API | ⏳ Pending | Rahil |
+| Phase 7 — Vectors | 7.1–7.5 Embeddings, pipeline, clustering, themes, contradiction detection | ⏳ Pending | Rahil |
+| Phase 8 — WS Streaming | 9.1 Redis channels, 9.2 WS relay, 9.4 Backpressure | ⏳ Pending | Manav / Sariya |
+| Phase 9 — Agent Orch. | 10.1–10.5 Decomp, graph, assignment, realloc, stopping | ⏳ Pending | Chinmay / Rahil |
+| Phase 10 — Commands | 11.1–11.4 Command protocol, watchdog, parallel dispatch, aggregation | ⏳ Pending | Chinmay / Rahil |
+| Phase 11 — Synthesis | 12.1–12.3 Clustering, briefing prompt, spoken delivery | ⏳ Pending | Rahil |
+| Phase 12 — Observability | 13.1–13.5 Logging, metrics, dashboards, tracing, DLQ | ⏳ Pending | Bharath / Manav / Sariya |
+| Phase 13 — Demo | 14.1–14.5 Demo script, mock mode, reset endpoint, diagram, load test | ⏳ Pending | Bharath |
+
+### What Is Live Right Now
+
+```
+backend/
+  main.py           GET /health → {"status": "ok"}
+  config.py         Settings (pydantic-settings, reads .env)
+  tests/
+    test_smoke.py   async health check — passing
+
+frontend/
+  src/
+    types/api.ts              TypeScript interfaces (all schemas)
+    store/index.ts            Zustand store (seeded with Sequoia demo data)
+    hooks/useWebSocket.ts     WS hook with exponential-backoff reconnection
+    components/
+      layout/
+        WarRoomLayout.tsx     Full-screen CSS grid war room
+        Header.tsx            Mission objective, status badge, connection dot
+      StatusBadge.tsx         Color-coded IDLE/ASSIGNED/BROWSING/REPORTING pill
+      AgentTile.tsx           Agent card with scanning animation
+      AgentGrid.tsx           2-col grid of 6 agent tiles
+      EvidenceCard.tsx        Card with confidence meter, theme pill, source link
+      EvidenceBoard.tsx       Scrollable board with theme filter pills
+      MissionTimeline.tsx     Chronological event log with lucide-react icons
+      VoicePanel.tsx          Mic toggle, 60fps waveform, transcript feed
+
+.github/workflows/ci.yml     4 parallel jobs (lint + test for backend + frontend)
+.env.example                 13 placeholder env vars
+docs/ENV.md                  Full variable reference
+```
+
+---
+
 ## System Overview
 
 Mission Control is a voice-driven AI command center that deploys a fleet of autonomous browser agents in parallel to investigate complex questions and synthesize real-time intelligence. A user speaks a mission request; the system interprets it, decomposes it into sub-tasks, deploys multiple browser agents (Amazon Nova Act / AgentCore Browser), collects evidence into a shared layer, clusters findings via embeddings, dynamically reallocates agents, narrates progress via Amazon Nova 2 Sonic, and produces a final synthesized briefing. The orchestrator (Amazon Nova 2 Lite) never holds full conversation history—it receives a structured Mission Context Packet. The demo targets sub-second voice response, sub-8s first evidence, and sub-45s final briefing.

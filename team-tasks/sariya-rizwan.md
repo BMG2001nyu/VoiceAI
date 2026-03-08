@@ -7,6 +7,39 @@
 
 ---
 
+## Implementation Status
+
+**Last updated:** March 2026
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 8.1 React + Vite Scaffold | ✅ Done | Tailwind, postcss, clsx, lucide-react installed; `tsconfig.json` created; `npm run build` passes |
+| 8.2 Full-Screen War Room Layout | ✅ Done | `WarRoomLayout.tsx` (CSS grid, 100vh), `Header.tsx` (brand, mission badge, connection dot) |
+| 8.3 Voice Panel | ✅ Done | `VoicePanel.tsx` — mic toggle, 60fps canvas waveform via `requestAnimationFrame`, scrolling transcript feed |
+| 8.4 Agent Fleet Grid | ✅ Done | `AgentGrid.tsx` + `AgentTile.tsx` + `StatusBadge.tsx` — 6 tiles, color-coded borders, scanning animation |
+| 8.5 Evidence Board | ✅ Done | `EvidenceBoard.tsx` + `EvidenceCard.tsx` — theme filter pills, confidence meter, source links |
+| 8.6 Mission Timeline | ✅ Done | `MissionTimeline.tsx` — all 7 event types with lucide-react icons, color-coded per type |
+| 8.7 WebSocket Integration | 🔄 Partial | `useWebSocket.ts` written with exponential-backoff reconnection; wired dispatch to Zustand — needs live `/ws/mission/{id}` backend |
+| 9.2 WebSocket Relay (backend) | ⏳ Pending | Backend `ws_relay.py` — blocked on Manav's Redis (Task 9.1) |
+| 9.3 Frontend Event Bus (Zustand) | ✅ Done | `src/store/index.ts` — all slices (mission, agents, evidence, timeline, transcript); `src/types/api.ts` — full TypeScript types |
+| 9.4 Backpressure | ⏳ Pending | Batched flush + virtual scroll — implement once live WS is connected |
+| 13.5 Dead-Letter Queue UI | ⏳ Pending | DLQ badge in header — blocked on Rahil's `POST /evidence` + Manav's Redis |
+
+### Phase 1 UI — Complete ✅
+
+The full War Room UI renders with mock data. Seeded with a live Sequoia demo mission: 4 active agents, 3 evidence cards across 3 themes, 7 timeline events, 2 transcript entries. Theme filter, confidence meters, and scanning animations all work.
+
+Run: `cd frontend && npm run dev` → http://localhost:5173 (or next available port).
+
+### Blocked On / Next Steps
+
+- **8.7 (complete):** Once Chinmay's `/ws/voice` and Manav's `/ws/mission/{id}` are live, remove the demo mock data from `store/index.ts` and let `useWebSocket.ts` drive state. The hook is ready — just needs the URLs.
+- **9.2 WebSocket relay:** Sariya and Manav co-own this. Manav provides the Redis pub/sub channels (Task 9.1); Sariya implements `backend/gateway/ws_relay.py`.
+- **9.4 Backpressure:** Add `src/hooks/useThrottledStore.ts` once there's a real event stream to measure. Also add `@tanstack/react-virtual` to Evidence Board.
+- **13.5 DLQ badge:** Add `GET /internal/dlq/count` poll to `Header.tsx` once Rahil's evidence ingest DLQ backend is wired.
+
+---
+
 ## Why These Tasks
 
 Your neon-exchange project — a pixel art market city prototype — is exactly the aesthetic and technical instinct Mission Control's War Room needs: cinematic, real-time, data-driven UI. You own everything the user sees: the full-screen dark war room layout, the live agent grid, the evidence board that streams in cards, the voice panel with a waveform, and the mission timeline. You also own the frontend streaming architecture (Zustand store, WebSocket state, backpressure) and the dead-letter / retry observability that surfaces errors silently in the UI.
@@ -15,21 +48,21 @@ Your neon-exchange project — a pixel art market city prototype — is exactly 
 
 ## Task Summary
 
-| Task | Phase | Description | Depends On |
-|------|-------|-------------|------------|
-| 8.1 | War Room UI | React + Vite scaffold | 1.2 |
-| 8.2 | War Room UI | Full-screen War Room layout | 8.1 |
-| 8.3 | War Room UI | Voice panel (mic, waveform, transcript) | 8.2, Phase 9 (WS) |
-| 8.4 | War Room UI | Agent Fleet Grid (live tiles) | 8.2, Phase 9 |
-| 8.5 | War Room UI | Evidence Board (streaming cards) | 8.2, 6.4, Phase 9 |
-| 8.6 | War Room UI | Mission Timeline (event log) | 8.2, Phase 9 |
-| 8.7 | War Room UI | WebSocket integration + reconnection | 8.3–8.6 |
-| 9.2 | Streaming | WebSocket relay (backend → frontend) | 9.1, 3.3 |
-| 9.3 | Streaming | Frontend event bus and state (Zustand) | 8.1, 9.2 |
-| 9.4 | Streaming | Backpressure and rate limiting | 9.2, 9.3 |
-| 13.5 | Observability | Dead-letter queue and retry strategy | 6.1, 11.1 |
+| Task | Phase | Description | Depends On | Status |
+|------|-------|-------------|------------|--------|
+| 8.1 | War Room UI | React + Vite scaffold | 1.2 | ✅ Done |
+| 8.2 | War Room UI | Full-screen War Room layout | 8.1 | ✅ Done |
+| 8.3 | War Room UI | Voice panel (mic, waveform, transcript) | 8.2, Phase 9 (WS) | ✅ Done |
+| 8.4 | War Room UI | Agent Fleet Grid (live tiles) | 8.2, Phase 9 | ✅ Done |
+| 8.5 | War Room UI | Evidence Board (streaming cards) | 8.2, 6.4, Phase 9 | ✅ Done |
+| 8.6 | War Room UI | Mission Timeline (event log) | 8.2, Phase 9 | ✅ Done |
+| 8.7 | War Room UI | WebSocket integration + reconnection | 8.3–8.6 | 🔄 Partial |
+| 9.2 | Streaming | WebSocket relay (backend → frontend) | 9.1, 3.3 | ⏳ Pending |
+| 9.3 | Streaming | Frontend event bus and state (Zustand) | 8.1, 9.2 | ✅ Done |
+| 9.4 | Streaming | Backpressure and rate limiting | 9.2, 9.3 | ⏳ Pending |
+| 13.5 | Observability | Dead-letter queue and retry strategy | 6.1, 11.1 | ⏳ Pending |
 
-**Total: 11 tasks**
+**Total: 11 tasks — 7 Done, 1 Partial, 3 Pending**
 
 ---
 
