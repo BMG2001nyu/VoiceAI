@@ -6,16 +6,16 @@ This file is the single source of truth for getting your local environment runni
 
 ## Current Implementation Status
 
-**Last updated:** March 2026 — Session 2
+**Last updated:** March 2026 — Session 3
 
 ### What Is Done
 
 | Area | Status | Key Files |
 |------|--------|-----------|
 | Monorepo scaffold | ✅ Done | All dirs, `.gitignore`, `README.md` |
-| Backend deps | ✅ Done | `backend/pyproject.toml` (all 10 runtime deps + dev extras) |
+| Backend deps | ✅ Done | `backend/pyproject.toml` (13 runtime deps + dev extras) |
 | Frontend deps | ✅ Done | `frontend/package.json`, `package-lock.json`, `tsconfig.json` |
-| Env config | ✅ Done | `.env.example`, `docs/ENV.md`, `backend/config.py` |
+| Env config | ✅ Done | `.env.example` (14 vars incl. `NOVA_API_KEY`), `docs/ENV.md`, `backend/config.py` |
 | CI pipeline | ✅ Done | `.github/workflows/ci.yml` (4 parallel jobs, green) |
 | Backend health endpoint | ✅ Done | `GET /health → {"status": "ok"}` in `backend/main.py` |
 | Backend smoke test | ✅ Done | `backend/tests/test_smoke.py` — passing |
@@ -23,9 +23,12 @@ This file is the single source of truth for getting your local environment runni
 | TypeScript types | ✅ Done | `frontend/src/types/api.ts` — all schemas (Mission, Agent, Evidence, Timeline) |
 | Zustand store | ✅ Done | `frontend/src/store/index.ts` — seeded with Sequoia demo mission |
 | WebSocket hook | 🔄 Partial | `frontend/src/hooks/useWebSocket.ts` — reconnection logic ready, needs live backend |
+| Nova Sonic client | ✅ Done | `models/sonic_client.py` — real-time WebSocket voice client, smoke-tested live |
+| Sonic tool schemas | ✅ Done | `models/sonic_tools.py` — 5 tools in Nova Realtime + Bedrock formats |
+| Nova Lite client | ✅ Done | `models/lite_client.py` — chat, streaming, plan_tasks, plan_next_actions, smoke-tested live |
 | AWS Infra | ⏳ Pending | Manav — Tasks 2.1–2.7 |
-| Voice Gateway | ⏳ Pending | Chinmay — Tasks 3.1–3.5 |
-| Mission Orchestrator | ⏳ Pending | Manav — Tasks 4.1–4.5 |
+| Voice Gateway FastAPI | ⏳ Pending | Chinmay — Task 3.3 (3.1 & 3.2 are done) |
+| Mission Orchestrator | ⏳ Pending | Manav — Tasks 4.1–4.3, 4.5 (4.4 `lite_client` is done) |
 | Browser Agents | ⏳ Pending | Chinmay — Tasks 5.1–5.5 |
 | Evidence Layer | ⏳ Pending | Rahil — Tasks 6.1–6.4 |
 | Vector / Embeddings | ⏳ Pending | Rahil — Tasks 7.1–7.5 |
@@ -54,6 +57,22 @@ cd backend
 source venv/bin/activate   # or: python3 -m venv venv && source venv/bin/activate && pip install -e ".[dev]"
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # GET http://localhost:8000/health → {"status": "ok"}
+```
+
+### Smoke-test the Nova Model Clients
+
+Both model clients have self-contained smoke tests that hit the live Nova API:
+
+```bash
+# Requires NOVA_API_KEY in env (or .env file)
+source backend/venv/bin/activate
+
+# Test Nova 2 Lite (chat, plan_tasks, streaming)
+NOVA_API_KEY=<your-key> python models/lite_client.py
+
+# Test Nova 2 Sonic (WebSocket voice, PCM audio output)
+NOVA_API_KEY=<your-key> python models/sonic_client.py
+# Saves nova_sonic_smoke.wav for playback verification
 ```
 
 ---
@@ -112,14 +131,36 @@ git checkout -b <your-name>/setup
 
 ---
 
-## Step 2 — AWS Access
+## Step 2 — Nova API Key + AWS Access
 
-You need an AWS account with Bedrock model access before you can run anything that touches Nova models.
+Nova model inference uses **two separate auth systems** depending on the layer:
 
-### 2a. Configure AWS credentials
+### 2a. Nova API Key (for model clients — already working)
+
+The model clients (`models/lite_client.py`, `models/sonic_client.py`) use the **Nova API** at `api.nova.amazon.com` — an OpenAI-compatible REST + WebSocket interface. Auth is a Bearer token, not AWS IAM.
+
+Get your key from [api.nova.amazon.com → API Keys](https://api.nova.amazon.com) and set it:
 
 ```bash
-# If the team shares a single AWS account, get your access key from Bharath
+# In your .env file
+NOVA_API_KEY=<your-key>
+```
+
+Verify it works:
+
+```bash
+curl -s -H "Authorization: Bearer $NOVA_API_KEY" \
+  https://api.nova.amazon.com/v1/models | python3 -m json.tool
+```
+
+Nova API rate limits (free tier): Nova 2 Lite — 20 RPM / 500 RPD · Nova 2 Sonic — 5 concurrent / 20 sessions/day.
+For higher limits, migrate to Amazon Bedrock (see 2b).
+
+### 2b. AWS Credentials (for infra — Manav's tasks)
+
+Required for deploying AWS infrastructure (ECS, Redis, Postgres, S3, OpenSearch). Get credentials from Bharath:
+
+```bash
 aws configure
 # AWS Access Key ID: <from Bharath>
 # AWS Secret Access Key: <from Bharath>
@@ -127,29 +168,21 @@ aws configure
 # Default output format: json
 ```
 
-Verify it works:
+Verify:
 
 ```bash
 aws sts get-caller-identity
 ```
 
-You should see your account ID and user ARN printed. If you see an error, your credentials are not set up correctly — ask Bharath.
+### 2c. Bedrock model access (for production scale)
 
-### 2b. Request Bedrock model access
-
-In the AWS console → Amazon Bedrock → Model access → request access for:
+When migrating from Nova API to Bedrock for higher throughput, request access in the AWS console → Amazon Bedrock → Model access for:
 
 - **Amazon Nova 2 Sonic** (voice model)
 - **Amazon Nova 2 Lite** (orchestrator / planning model)
 - **Amazon Nova Multimodal Embeddings** (evidence embeddings)
 
-Access is granted per-region. Use **us-east-1** unless Bharath specifies otherwise. Model access can take a few minutes to propagate.
-
-Verify access from terminal:
-
-```bash
-aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'nova')].modelId"
-```
+Use **us-east-1**. For now, the Nova API key is sufficient for all model work.
 
 ---
 
@@ -164,6 +197,7 @@ cp .env.example .env
 Open `.env` and fill in at minimum:
 
 ```env
+NOVA_API_KEY=<your-key>   # required for all model clients (Lite + Sonic)
 AWS_REGION=us-east-1
 AWS_PROFILE=default
 ```
@@ -188,7 +222,7 @@ source venv/bin/activate       # macOS/Linux
 pip install -e ".[dev]"
 
 # Verify
-python -c "import fastapi, boto3, redis; print('Backend deps OK')"
+python -c "import fastapi, boto3, redis, openai, websockets; print('Backend deps OK')"
 ```
 
 Run the smoke test to confirm everything imports correctly:
@@ -427,14 +461,14 @@ Files marked `✅` exist and are functional. Files marked `⏳` are planned but 
 VoiceAI/
 ├── tasks.md                    ✅ Full system engineering plan (with progress tracker)
 ├── CLAUDE.md                   ✅ This file
-├── .env.example                ✅ 13 placeholder env vars
+├── .env.example                ✅ 14 placeholder env vars (incl. NOVA_API_KEY)
 ├── docker-compose.yml          ⏳ Pending (Bharath Task 2.7)
 │
 ├── team-tasks/                 ✅ All task files updated with current status
 │   ├── bharath-gera.md         ✅ 4/12 tasks done
-│   ├── manav-parikh.md         ✅ 0/14 tasks (all pending)
+│   ├── manav-parikh.md         ✅ 1/14 tasks done (4.4 lite_client)
 │   ├── rahil-singhi.md         ✅ 0/15 tasks (all pending)
-│   ├── chinmay-shringi.md      ✅ 0/16 tasks (all pending)
+│   ├── chinmay-shringi.md      ✅ 2/16 tasks done (3.1 sonic_client, 3.2 sonic_tools)
 │   └── sariya-rizwan.md        ✅ 7/11 tasks done
 │
 ├── .github/
@@ -460,10 +494,11 @@ VoiceAI/
 ├── agents/
 │   └── prompts/                ✅ directory exists (Chinmay to populate Task 5.3)
 │
-├── models/                     ✅ directory exists
-│   ├── sonic_client.py         ⏳ Pending (Chinmay Task 3.1)
-│   ├── sonic_tools.py          ⏳ Pending (Chinmay Task 3.2)
-│   ├── lite_client.py          ⏳ Pending (Manav Task 4.4)
+├── models/
+│   ├── __init__.py             ✅ Package init — exports all clients
+│   ├── sonic_client.py         ✅ Nova 2 Sonic real-time WebSocket client (Task 3.1)
+│   ├── sonic_tools.py          ✅ 5 tool schemas — Nova Realtime + Bedrock formats (Task 3.2)
+│   ├── lite_client.py          ✅ Nova 2 Lite chat/plan/stream client (Task 4.4)
 │   └── embedding_client.py     ⏳ Pending (Rahil Task 7.1)
 │
 ├── frontend/
@@ -560,7 +595,8 @@ These are the cross-team touchpoints most likely to cause merge conflicts or blo
 | Redis channels defined (`docs/EVENTS.md`) | Manav | Sariya (WebSocket relay), Chinmay (AGENT_UPDATE events) |
 | Voice Gateway WebSocket live (`/ws/voice`) | Chinmay | Sariya (VoicePanel connects) |
 | Mission WebSocket relay live (`/ws/mission/{id}`) | Sariya | Sariya can test live evidence streaming |
-| `models/lite_client.py` exists | Manav (creates it in Task 4.4) | Chinmay (task decomposition, Task 10.1), Rahil (theme labeller, Task 7.4) |
+| ~~`models/lite_client.py` exists~~ | ~~Manav~~ ✅ **Done** | Chinmay (task decomposition, Task 10.1), Rahil (theme labeller, Task 7.4) |
+| ~~`models/sonic_client.py` + `sonic_tools.py` exist~~ | ~~Chinmay~~ ✅ **Done** | Chinmay can now build Task 3.3 (Voice Gateway) |
 | `models/embedding_client.py` exists + dimension constant exported | Rahil | Manav (OpenSearch index dimension, Task 2.5) |
 | Docker Compose up (`docker-compose.yml` created — Task 2.7) | Bharath | Everyone needing local Redis/Postgres |
 
@@ -615,6 +651,6 @@ The request body does not match `EvidenceIngest` schema. Check required fields: 
 
 ---
 
-*Last updated: March 2026 — Session 2. Questions? Ask Bharath or drop a message in the team chat.*
+*Last updated: March 2026 — Session 3. Questions? Ask Bharath or drop a message in the team chat.*
 
-**Quick status:** Phase 1 complete (scaffold + CI + UI). Waiting on Manav (AWS infra), Chinmay (voice gateway + agent prompts), and Rahil (embedding client dimension) to unblock Phases 2–6. See `tasks.md` → Implementation Progress for the full tracker.
+**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅ — all smoke-tested against the live Nova API. Next: Manav deploys AWS infra (Tasks 2.1–2.4) to unblock Chinmay's voice gateway (Task 3.3) and Rahil's evidence layer. Chinmay can start Task 3.3 logic now using the Sonic client. See `tasks.md` → Implementation Progress for the full tracker.

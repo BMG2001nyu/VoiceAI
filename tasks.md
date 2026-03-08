@@ -4,7 +4,7 @@
 
 ## Implementation Progress
 
-**Last updated:** March 2026 — Session 2
+**Last updated:** March 2026 — Session 3
 
 | Phase | Tasks | Status | Owner |
 |-------|-------|--------|-------|
@@ -13,8 +13,8 @@
 | Phase 1 — Frontend State | 9.3 Zustand store + TypeScript types | ✅ Done | Sariya |
 | Phase 1 — WebSocket Hook | 8.7 WS hook (reconnection logic) | 🔄 Placeholder — needs live backend | Sariya |
 | Phase 2 — AWS Infra | 2.1–2.5 VPC/ECS/Redis/Postgres/S3/OpenSearch, 2.6 IAM, 2.7 Docker Compose | ⏳ Pending | Manav / Bharath |
-| Phase 3 — Voice Gateway | 3.1–3.5 Sonic client, tools, WS gateway, VAD, barge-in | ⏳ Pending | Chinmay |
-| Phase 4 — Orchestrator | 4.1–4.5 State machine, CRUD API, context builder, task graph, planning loop | ⏳ Pending | Manav |
+| Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway, 3.4 VAD, 3.5 barge-in | 🔄 2/5 Done | Chinmay |
+| Phase 4 — Orchestrator | 4.4 Nova Lite client ✅, 4.1 State machine, 4.2 CRUD API, 4.3 context builder, 4.5 planning loop | 🔄 1/5 Done | Manav |
 | Phase 5 — Browser Agents | 5.1–5.5 Session manager, pool, prompts, evidence emission, lifecycle | ⏳ Pending | Chinmay |
 | Phase 6 — Evidence | 6.1–6.4 Schema, storage, scoring, list API | ⏳ Pending | Rahil |
 | Phase 7 — Vectors | 7.1–7.5 Embeddings, pipeline, clustering, themes, contradiction detection | ⏳ Pending | Rahil |
@@ -28,11 +28,25 @@
 ### What Is Live Right Now
 
 ```
+models/
+  __init__.py         Package init — exports LiteClient, SonicClient, SonicEvent, SONIC_TOOLS
+  lite_client.py      Nova 2 Lite client via Nova API (api.nova.amazon.com)
+                        chat(), stream_chat(), plan_tasks(), plan_next_actions(),
+                        synthesize_briefing() — smoke-tested live ✅
+  sonic_client.py     Nova 2 Sonic real-time WebSocket client
+                        SonicClient.connect(), SonicSession.send_audio/text/tool_result,
+                        stream_events() → SonicEvent, silence keepalive, interrupt()
+                        — smoke-tested live, 184KB audio received ✅
+  sonic_tools.py      5 tool schemas: start_mission, get_mission_status, get_new_findings,
+                        ask_user_for_clarification, deliver_final_briefing
+                        SONIC_TOOLS (Nova Realtime format) + SONIC_TOOLS_BEDROCK (fallback) ✅
+
 backend/
-  main.py           GET /health → {"status": "ok"}
-  config.py         Settings (pydantic-settings, reads .env)
+  main.py             GET /health → {"status": "ok"}
+  config.py           Settings (pydantic-settings, reads .env) — incl. nova_api_key
+  pyproject.toml      13 runtime deps (added openai, tenacity, websockets)
   tests/
-    test_smoke.py   async health check — passing
+    test_smoke.py     async health check — passing
 
 frontend/
   src/
@@ -52,7 +66,7 @@ frontend/
       VoicePanel.tsx          Mic toggle, 60fps waveform, transcript feed
 
 .github/workflows/ci.yml     4 parallel jobs (lint + test for backend + frontend)
-.env.example                 13 placeholder env vars
+.env.example                 14 placeholder env vars (incl. NOVA_API_KEY)
 docs/ENV.md                  Full variable reference
 ```
 

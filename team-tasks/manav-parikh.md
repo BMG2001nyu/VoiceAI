@@ -9,7 +9,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026
+**Last updated:** March 2026 — Session 3
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -19,10 +19,10 @@
 | 2.4 S3 Buckets | ⏳ Pending | Depends on 2.1 |
 | 2.5 OpenSearch Serverless | ⏳ Pending | Coordinate with Rahil on embedding dimension before creating index |
 | 4.1 Mission State Machine | ⏳ Pending | Depends on 2.2, 2.3 |
-| 4.2 Mission CRUD API | ⏳ Pending | Depends on 4.1 — unblocks Chinmay and Sariya |
+| 4.2 Mission CRUD API | ⏳ Pending | Depends on 4.1 — unblocks Chinmay (3.3) and Sariya |
 | 4.3 Context Packet Builder | ⏳ Pending | Depends on 4.1 |
-| 4.4 Task Graph (Nova Lite) | ⏳ Pending | Depends on 4.1, 4.3; creates `models/lite_client.py` (needed by Rahil) |
-| 4.5 Orchestrator Planning Loop | ⏳ Pending | Depends on 4.3, 4.4, Phase 5 |
+| 4.4 Task Graph (Nova Lite) | ✅ Done | `models/lite_client.py` — plan_tasks(), plan_next_actions(), synthesize_briefing() |
+| 4.5 Orchestrator Planning Loop | ⏳ Pending | Depends on 4.3, 4.4 ✅, Phase 5 |
 | 9.1 Redis Pub/Sub Channels | ⏳ Pending | Depends on 2.2, 4.1, 6.1 — unblocks Sariya's WS relay |
 | 13.2 Metrics Emission | ⏳ Pending | Instrument after Phases 3–6 in place |
 | 13.3 CloudWatch Dashboards | ⏳ Pending | Depends on 13.2 |
@@ -31,16 +31,23 @@
 ### What You're Unblocking
 
 Your first four tasks (2.1–2.4 infra + 4.2 Mission API) directly unblock:
-- **Chinmay** — can't connect voice gateway or agent pool to Redis/Postgres until 2.2, 2.3 are live
+- **Chinmay** — `models/sonic_client.py` is ready; Chinmay can build Task 3.3 gateway logic now but needs your `POST /missions` endpoint for the `start_mission` tool handler
 - **Rahil** — can't ingest evidence until 2.3 (Postgres) and 2.4 (S3) exist
 - **Sariya** — `GET /missions/{id}` (Task 4.2) is needed for WS reconnect state refetch; ALB URL needed for CORS config
 
 ### What You Need First
 
-The foundation is already in place from Bharath (Phase 1):
-- `backend/config.py` — Settings class reads all your infra URLs from env
-- `.env.example` — has placeholders for `REDIS_URL`, `DATABASE_URL`, `OPENSEARCH_ENDPOINT`, `S3_BUCKET_EVIDENCE`
-- `backend/pyproject.toml` — all Python deps already pinned including `asyncpg`, `redis[hiredis]`, `boto3`, `sqlalchemy[asyncio]`
+Already in place (no waiting required):
+- `models/lite_client.py` ✅ — `LiteClient.plan_tasks()` and `plan_next_actions()` are live and tested. Import directly into your `task_planner.py` (Task 4.4 integration):
+  ```python
+  from models.lite_client import LiteClient
+  client = LiteClient(api_key=settings.nova_api_key)
+  tasks = await client.plan_tasks(mission.objective)
+  commands = await client.plan_next_actions(context_packet)
+  ```
+- `backend/config.py` — `settings.nova_api_key` reads `NOVA_API_KEY` from env; all infra URL settings already wired
+- `.env.example` — has placeholders for `REDIS_URL`, `DATABASE_URL`, `OPENSEARCH_ENDPOINT`, `S3_BUCKET_EVIDENCE`, `NOVA_API_KEY`
+- `backend/pyproject.toml` — all Python deps already pinned including `asyncpg`, `redis[hiredis]`, `boto3`, `sqlalchemy[asyncio]`, `openai`, `websockets`
 - `backend/main.py` — FastAPI app ready to mount your routers
 
 **Your immediate next step:** set up the CDK/Terraform project in `infra/` and deploy Tasks 2.1–2.4 so the rest of the team can connect to real services.
@@ -65,14 +72,14 @@ Your cloud engineering background (TA for Cloud Computing, AWS infra, Docker/K8s
 | 4.1 | Orchestrator | Mission state machine and storage | 2.3 | ⏳ Pending |
 | 4.2 | Orchestrator | Mission CRUD API | 4.1 | ⏳ Pending |
 | 4.3 | Orchestrator | Context packet builder | 4.1 | ⏳ Pending |
-| 4.4 | Orchestrator | Task graph construction (Nova Lite) | 4.1, 4.3 | ⏳ Pending |
-| 4.5 | Orchestrator | Orchestrator planning loop | 4.3, 4.4 | ⏳ Pending |
+| 4.4 | Orchestrator | Task graph construction (Nova Lite) | — | ✅ Done |
+| 4.5 | Orchestrator | Orchestrator planning loop | 4.3, 4.4 ✅ | ⏳ Pending |
 | 9.1 | Streaming | Redis pub/sub channel definitions | 2.2, 4.1, 6.1 | ⏳ Pending |
 | 13.2 | Observability | Metrics emission (CloudWatch / OTel) | Phase 3–6, 9 | ⏳ Pending |
 | 13.3 | Observability | CloudWatch dashboards and alarms | 13.2 | ⏳ Pending |
 | 13.4 | Observability | Distributed tracing (AWS X-Ray) | 13.1 | ⏳ Pending |
 
-**Total: 14 tasks — 0 Done, 14 Pending**
+**Total: 14 tasks — 1 Done, 13 Pending**
 
 ---
 
