@@ -6,7 +6,7 @@ This file is the single source of truth for getting your local environment runni
 
 ## Current Implementation Status
 
-**Last updated:** March 2026 — Session 3
+**Last updated:** March 2026 — Session 4
 
 ### What Is Done
 
@@ -651,6 +651,6 @@ The request body does not match `EvidenceIngest` schema. Check required fields: 
 
 ---
 
-*Last updated: March 2026 — Session 3. Questions? Ask Bharath or drop a message in the team chat.*
+*Last updated: March 2026 — Session 4. Questions? Ask Bharath or drop a message in the team chat.*
 
-**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅ — all smoke-tested against the live Nova API. Next: Manav deploys AWS infra (Tasks 2.1–2.4) to unblock Chinmay's voice gateway (Task 3.3) and Rahil's evidence layer. Chinmay can start Task 3.3 logic now using the Sonic client. See `tasks.md` → Implementation Progress for the full tracker.
+**Quick status:** Phase 1 complete (scaffold + CI + UI). Nova model clients live and smoke-tested: `lite_client.py` ✅ `sonic_client.py` ✅ `sonic_tools.py` ✅. Session 4 priorities: (1) **Chinmay** — Task 3.3 Voice Gateway (Sonic client ready, can start now); (2) **Manav** — Tasks 2.1–2.4 AWS infra (biggest unlocker); (3) **Rahil** — Task 7.1 `embedding_client.py` (no infra dep, start now); (4) **Bharath** — Task 2.7 `docker-compose.yml` (unblocks local dev). See `tasks.md` → Implementation Progress for the full tracker.
