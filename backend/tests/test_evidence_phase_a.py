@@ -130,9 +130,7 @@ class TestConfidenceScoring:
     def test_max_score_capped_at_one(self):
         from evidence.scoring import compute_confidence
 
-        score = compute_confidence(
-            "https://sequoiacap.com/about", "x" * 10000
-        )
+        score = compute_confidence("https://sequoiacap.com/about", "x" * 10000)
         assert score <= 1.0
 
     def test_empty_url_handled(self):
@@ -178,9 +176,7 @@ class TestNoveltyScoring:
         from evidence.scoring import compute_novelty
 
         mock_os = AsyncMock()
-        mock_os.search = AsyncMock(
-            return_value={"hits": {"hits": []}}
-        )
+        mock_os.search = AsyncMock(return_value={"hits": {"hits": []}})
         result = await compute_novelty(
             "eid", "mid", opensearch_client=mock_os, vector=[0.1] * 1024
         )
@@ -493,9 +489,7 @@ class TestEvidenceRouterPhaseA:
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=app), base_url="http://test"
             ) as client:
-                resp = await client.get(
-                    f"/missions/{evidence['mission_id']}/evidence"
-                )
+                resp = await client.get(f"/missions/{evidence['mission_id']}/evidence")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -512,9 +506,7 @@ class TestEvidenceRouterPhaseA:
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
-            resp = await client.get(
-                f"/missions/{evidence['mission_id']}/evidence"
-            )
+            resp = await client.get(f"/missions/{evidence['mission_id']}/evidence")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -530,9 +522,7 @@ class TestEvidenceRouterPhaseA:
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
-            resp = await client.get(
-                f"/missions/{evidence['mission_id']}/evidence"
-            )
+            resp = await client.get(f"/missions/{evidence['mission_id']}/evidence")
 
         assert resp.status_code == 200
         data = resp.json()

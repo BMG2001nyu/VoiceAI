@@ -96,9 +96,7 @@ async def compute_novelty(
         if not hits:
             return 1.0
 
-        other_scores = [
-            h["_score"] for h in hits if h["_id"] != str(evidence_id)
-        ]
+        other_scores = [h["_score"] for h in hits if h["_id"] != str(evidence_id)]
         if not other_scores:
             return 1.0
 

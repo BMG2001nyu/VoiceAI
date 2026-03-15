@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TaskNode:
     """A single task in the mission's task graph."""
+
     id: str
     description: str
     agent_type: str
@@ -56,9 +57,9 @@ def get_available_tasks(tasks: list[TaskNode]) -> list[TaskNode]:
     done_ids = {t.id for t in tasks if t.status == "DONE"}
 
     available = [
-        t for t in tasks
-        if t.status == "PENDING"
-        and all(dep in done_ids for dep in t.dependencies)
+        t
+        for t in tasks
+        if t.status == "PENDING" and all(dep in done_ids for dep in t.dependencies)
     ]
 
     # Sort: highest priority first, then oldest first
@@ -66,7 +67,9 @@ def get_available_tasks(tasks: list[TaskNode]) -> list[TaskNode]:
 
     logger.debug(
         "Available tasks: %d/%d (done=%d)",
-        len(available), len(tasks), len(done_ids),
+        len(available),
+        len(tasks),
+        len(done_ids),
     )
     return available
 

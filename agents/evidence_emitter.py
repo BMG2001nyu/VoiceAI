@@ -39,7 +39,9 @@ async def emit_findings(
         Number of evidence records successfully posted.
     """
     if not result.success or not result.extracted_text:
-        logger.warning("Agent %s: no findings to emit (success=%s)", agent_id, result.success)
+        logger.warning(
+            "Agent %s: no findings to emit (success=%s)", agent_id, result.success
+        )
         return 0
 
     # Extract individual claims using Nova Lite
@@ -77,19 +79,27 @@ async def emit_findings(
                     posted += 1
                     logger.info(
                         "Agent %s: posted evidence %d/%d for task %s",
-                        agent_id, i + 1, len(claims), task_id,
+                        agent_id,
+                        i + 1,
+                        len(claims),
+                        task_id,
                     )
                 else:
                     logger.warning(
                         "Agent %s: evidence POST returned %d: %s",
-                        agent_id, resp.status_code, resp.text[:200],
+                        agent_id,
+                        resp.status_code,
+                        resp.text[:200],
                     )
             except httpx.HTTPError as exc:
                 logger.error("Agent %s: evidence POST failed: %s", agent_id, exc)
 
     logger.info(
         "Agent %s: emitted %d/%d findings for task %s",
-        agent_id, posted, len(claims), task_id,
+        agent_id,
+        posted,
+        len(claims),
+        task_id,
     )
     return posted
 
@@ -131,6 +141,7 @@ async def extract_claims(
         )
 
         import json
+
         response = await client.chat(prompt)
 
         # Try to parse JSON from response
@@ -150,13 +161,17 @@ async def extract_claims(
         validated = []
         for c in claims[:MAX_CLAIMS]:
             if isinstance(c, dict) and "claim" in c:
-                validated.append({
-                    "claim": str(c.get("claim", ""))[:200],
-                    "summary": str(c.get("summary", ""))[:500],
-                    "snippet": str(c.get("snippet", ""))[:300],
-                    "confidence": min(1.0, max(0.0, float(c.get("confidence", 0.8)))),
-                    "theme": c.get("theme"),
-                })
+                validated.append(
+                    {
+                        "claim": str(c.get("claim", ""))[:200],
+                        "summary": str(c.get("summary", ""))[:500],
+                        "snippet": str(c.get("snippet", ""))[:300],
+                        "confidence": min(
+                            1.0, max(0.0, float(c.get("confidence", 0.8)))
+                        ),
+                        "theme": c.get("theme"),
+                    }
+                )
 
         return validated if validated else _fallback_extract(text)
 
@@ -167,14 +182,30 @@ async def extract_claims(
 
 def _fallback_extract(text: str) -> list[dict[str, Any]]:
     """Simple fallback: split text into paragraph-based claims."""
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip() and len(p.strip()) > 50]
+    paragraphs = [
+        p.strip() for p in text.split("\n\n") if p.strip() and len(p.strip()) > 50
+    ]
     claims = []
     for p in paragraphs[:3]:
-        claims.append({
-            "claim": p[:200],
-            "summary": p[:500],
-            "snippet": p[:300],
-            "confidence": 0.6,
-            "theme": "other",
-        })
-    return claims if claims else [{"claim": text[:200], "summary": text[:500], "snippet": text[:300], "confidence": 0.5, "theme": "other"}]
+        claims.append(
+            {
+                "claim": p[:200],
+                "summary": p[:500],
+                "snippet": p[:300],
+                "confidence": 0.6,
+                "theme": "other",
+            }
+        )
+    return (
+        claims
+        if claims
+        else [
+            {
+                "claim": text[:200],
+                "summary": text[:500],
+                "snippet": text[:300],
+                "confidence": 0.5,
+                "theme": "other",
+            }
+        ]
+    )

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class BrowserResult:
     """Result from a browser research task."""
+
     extracted_text: str = ""
     source_url: str = ""
     screenshot_base64: str | None = None
@@ -79,8 +80,10 @@ async def _run_nova_act(
             logger.warning("Screenshot capture failed: %s", exc)
 
         return BrowserResult(
-            extracted_text=result.response if hasattr(result, 'response') else str(result),
-            source_url=result.url if hasattr(result, 'url') else starting_url,
+            extracted_text=(
+                result.response if hasattr(result, "response") else str(result)
+            ),
+            source_url=result.url if hasattr(result, "url") else starting_url,
             screenshot_base64=screenshot,
             success=True,
             metadata={"engine": "nova_act"},
@@ -135,11 +138,13 @@ async def _run_playwright(
                     pass  # Stay on search results
 
             # Extract page content
-            content = await page.evaluate("""() => {
+            content = await page.evaluate(
+                """() => {
                 const sel = document.querySelectorAll('article, main, [role="main"], .content, #content, body');
                 const el = sel[0] || document.body;
                 return el.innerText.slice(0, 15000);
-            }""")
+            }"""
+            )
 
             current_url = page.url
 
@@ -207,8 +212,15 @@ def _extract_search_query(objective: str) -> str:
     # Take the first 100 chars and clean up for search
     query = objective[:100].strip()
     # Remove common instruction prefixes
-    for prefix in ("Search for ", "Find ", "Look up ", "Scrape ", "Retrieve ", "Check "):
+    for prefix in (
+        "Search for ",
+        "Find ",
+        "Look up ",
+        "Scrape ",
+        "Retrieve ",
+        "Check ",
+    ):
         if query.startswith(prefix):
-            query = query[len(prefix):]
+            query = query[len(prefix) :]
             break
     return query

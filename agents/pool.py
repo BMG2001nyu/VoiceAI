@@ -64,7 +64,9 @@ async def get_agent_state(redis: Any, aid: str) -> dict[str, str]:
     state = await redis.hgetall(agent_key(aid))
     # Redis returns bytes by default; decode if needed
     return {
-        (k.decode() if isinstance(k, bytes) else k): (v.decode() if isinstance(v, bytes) else v)
+        (k.decode() if isinstance(k, bytes) else k): (
+            v.decode() if isinstance(v, bytes) else v
+        )
         for k, v in state.items()
     }
 
