@@ -479,7 +479,7 @@ VoiceAI/
 │   ├── manav-parikh.md         ✅ 4/14 tasks done (4.1–4.2, 9.1 by Bharath; 4.4 lite_client)
 │   ├── rahil-singhi.md         ✅ 2/15 tasks done (6.1 ingest, 6.4 list API)
 │   ├── chinmay-shringi.md      ✅ 16/16 tasks done (all complete — Session 7)
-│   └── sariya-rizwan.md        ✅ 9/11 tasks done (8.7 EVIDENCE_FOUND payload fix)
+│   └── sariya-rizwan.md        ✅ 11/11 tasks done (all complete — Session 7)
 │
 ├── .github/
 │   └── workflows/

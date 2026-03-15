@@ -9,7 +9,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 6
+**Last updated:** March 2026 — Session 7
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -22,8 +22,8 @@
 | 8.7 WebSocket Integration | ✅ Done | `useWebSocket.ts` written with exponential-backoff reconnection; wired to Zustand — backend WS endpoints now live |
 | 9.2 WebSocket Relay (backend) | ✅ Done | `backend/streaming/ws_relay.py` — `/ws/mission/{id}` subscribes Redis, forwards to browser; 574 ms pipe confirmed |
 | 9.3 Frontend Event Bus (Zustand) | ✅ Done | `src/store/index.ts` — all slices (mission, agents, evidence, timeline, transcript); `src/types/api.ts` — full TypeScript types |
-| 9.4 Backpressure | ⏳ Pending | Batched flush + virtual scroll — implement once live WS is connected (it now is!) |
-| 13.5 Dead-Letter Queue UI | ⏳ Pending | DLQ badge in header — `POST /evidence` ✅ is live; add `GET /internal/dlq/count` poll |
+| 9.4 Backpressure | ✅ Done | `useThrottledStore.ts` — 150ms batched flush, AGENT_UPDATE collapsing, burst protection; `docs/FRONTEND_STREAMING.md` |
+| 13.5 Dead-Letter Queue UI | ✅ Done | `backend/evidence/dlq.py` + `backend/routers/internal.py` (DLQ endpoints); Header.tsx polls `GET /internal/dlq/count` every 10s |
 
 ### Phase 1 UI — Complete ✅
 
@@ -71,10 +71,10 @@ Your neon-exchange project — a pixel art market city prototype — is exactly 
 | 8.7 | War Room UI | WebSocket integration + reconnection | 8.3–8.6 | ✅ Done |
 | 9.2 | Streaming | WebSocket relay (backend → frontend) | 9.1 ✅, 3.3 ✅ | ✅ Done |
 | 9.3 | Streaming | Frontend event bus and state (Zustand) | 8.1, 9.2 ✅ | ✅ Done |
-| 9.4 | Streaming | Backpressure and rate limiting | 9.2 ✅, 9.3 ✅ | ⏳ Pending |
-| 13.5 | Observability | Dead-letter queue and retry strategy | 6.1 ✅, 11.1 | ⏳ Pending |
+| 9.4 | Streaming | Backpressure and rate limiting | 9.2 ✅, 9.3 ✅ | ✅ Done |
+| 13.5 | Observability | Dead-letter queue and retry strategy | 6.1 ✅, 11.1 ✅ | ✅ Done |
 
-**Total: 11 tasks — 9 Done, 2 Pending**
+**Total: 11 tasks — 11 Done, 0 Pending**
 
 ---
 
