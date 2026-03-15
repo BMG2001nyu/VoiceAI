@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from evidence.dlq import dlq_worker
 from logging_config import configure_logging
+from metrics import flush as flush_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,16 @@ async def lifespan(app: FastAPI):
     # Start DLQ background worker for retrying failed evidence ingestion.
     dlq_task = asyncio.create_task(dlq_worker(app.state.redis, app.state.db))
 
+    # Initialise X-Ray tracing in non-demo mode.
+    if not settings.demo_mode:
+        from tracing import init_tracing
+
+        init_tracing()
+
     yield
+
+    # Flush any remaining buffered CloudWatch metrics on shutdown.
+    await flush_metrics()
 
     dlq_task.cancel()
     try:
@@ -54,6 +64,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# X-Ray middleware — adds a segment per request (disabled in demo mode).
+if not settings.demo_mode:
+    from tracing import XRayMiddleware
+
+    app.add_middleware(XRayMiddleware)
 
 
 @app.get("/health")

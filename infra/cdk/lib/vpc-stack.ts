@@ -14,8 +14,8 @@ export class VpcStack extends cdk.Stack {
         // 1. Create the VPC
         this.vpc = new ec2.Vpc(this, 'MissionControlVpc', {
             ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
-            maxAzs: 2, // Spanning 2 Availability Zones for high availability
-            natGateways: 1, // Single NAT Gateway for cost savings
+            maxAzs: 2,
+            natGateways: 1,
             subnetConfiguration: [
                 {
                     cidrMask: 24,
@@ -30,6 +30,33 @@ export class VpcStack extends cdk.Stack {
             ],
         });
 
-        // Security groups are defined in their respective stacks (e.g., EcsStack) to prevent cyclic dependencies.
+        // 2. Security groups — shared across stacks via public readonly properties
+        this.fargateSg = new ec2.SecurityGroup(this, 'FargateSg', {
+            vpc: this.vpc,
+            description: 'Security group for the Fargate backend service',
+            allowAllOutbound: true,
+        });
+
+        this.redisSg = new ec2.SecurityGroup(this, 'RedisSg', {
+            vpc: this.vpc,
+            description: 'Security group for Redis ElastiCache cluster',
+            allowAllOutbound: false,
+        });
+        this.redisSg.addIngressRule(
+            this.fargateSg,
+            ec2.Port.tcp(6379),
+            'Allow inbound from Fargate',
+        );
+
+        this.rdsSg = new ec2.SecurityGroup(this, 'RdsSg', {
+            vpc: this.vpc,
+            description: 'Security group for Postgres RDS instance',
+            allowAllOutbound: false,
+        });
+        this.rdsSg.addIngressRule(
+            this.fargateSg,
+            ec2.Port.tcp(5432),
+            'Allow inbound from Fargate',
+        );
     }
 }

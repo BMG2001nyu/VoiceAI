@@ -4,7 +4,7 @@
 
 ## Implementation Progress
 
-**Last updated:** March 2026 — Session 7
+**Last updated:** March 2026 — Session 8
 
 | Phase | Tasks | Status | Owner |
 |-------|-------|--------|-------|
@@ -12,22 +12,24 @@
 | Phase 1 — War Room UI | 8.1 Scaffold, 8.2 Layout, 8.3 Voice Panel, 8.4 Agent Grid, 8.5 Evidence Board, 8.6 Timeline | ✅ All Done | Sariya |
 | Phase 1 — Frontend State | 9.3 Zustand store + TypeScript types | ✅ Done | Sariya |
 | Phase 1 — WebSocket Hook | 8.7 WS hook (reconnection + EVIDENCE_FOUND payload fix) | ✅ Done | Sariya |
-| Phase 2 — AWS Infra | 2.7 Docker Compose ✅, 2.1–2.5 VPC/ECS/Redis/Postgres/S3/OpenSearch, 2.6 IAM | 🔄 1/7 Done | Manav / Bharath |
+| Phase 2 — AWS Infra | 2.1 VPC ✅, 2.2 Redis ✅, 2.3 RDS ✅, 2.4 S3 ✅, 2.5 OpenSearch ✅, 2.6 IAM ✅, 2.7 Docker Compose ✅ | ✅ All Done | Manav / Chinmay |
 | Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway ✅, 3.4 VAD ✅, 3.5 Barge-in ✅ | ✅ All Done | Chinmay |
-| Phase 4 — Orchestrator | 4.4 Nova Lite ✅, 4.1 State machine ✅, 4.2 CRUD API ✅ (PATCH enforces valid transitions), 4.3, 4.5 | 🔄 3/5 Done | Bharath / Manav |
+| Phase 4 — Orchestrator | 4.1 State machine ✅, 4.2 CRUD API ✅, 4.3 Context packet ✅, 4.4 Nova Lite ✅, 4.5 Planning loop ✅ | ✅ All Done | Bharath / Chinmay |
 | Phase 5 — Browser Agents | 5.1 Session manager ✅, 5.2 Pool ✅, 5.3 Prompts ✅, 5.4 Evidence emission ✅, 5.5 Lifecycle ✅ | ✅ All Done | Chinmay |
-| Phase 6 — Evidence | 6.1–6.4 Schema ✅, ingest ✅, screenshots ✅, confidence scoring ✅, list API ✅ | ✅ 4/4 Done | Rahil |
-| Phase 7 — Vectors | 7.1 Embedding client ✅ (Titan Embed Image v1, 1024 dim), 7.2–7.5 pipeline, clustering, themes, contradictions | 🔄 1/5 Done | Rahil |
-| Phase 8 — WS Streaming | 9.1 Redis channels ✅, 9.2 WS relay ✅, 9.4 Backpressure | 🔄 2/3 Done | Bharath / Sariya |
-| Phase 9 — Agent Orch. | 10.1 Decomp prompt ✅, 10.2 Task graph ✅, 10.3 Assignment ✅, 10.4–10.5 realloc/stopping | 🔄 3/5 Done | Chinmay / Rahil |
-| Phase 10 — Commands | 11.1 Command protocol ✅, 11.2 Watchdog ✅, 11.3 Parallel dispatch ✅, 11.4 aggregation | 🔄 3/4 Done | Chinmay / Rahil |
-| Phase 11 — Synthesis | 12.1–12.3 Clustering, briefing prompt, spoken delivery | ⏳ Pending | Rahil |
-| Phase 12 — Observability | 13.1–13.5 Logging, metrics, dashboards, tracing, DLQ | ⏳ Pending | Bharath / Manav / Sariya |
-| Phase 13 — Demo | 14.1–14.5 Demo script, mock mode, reset endpoint, diagram, load test | ⏳ Pending | Bharath |
+| Phase 6 — Evidence | 6.1–6.4 Schema ✅, ingest ✅, screenshots ✅, confidence scoring ✅, list API ✅ | ✅ All Done | Rahil |
+| Phase 7 — Vectors | 7.1 Embedding client ✅, 7.2 Pipeline ✅, 7.3 Clustering ✅, 7.4 Themes ✅, 7.5 Contradictions ✅ | ✅ All Done | Rahil |
+| Phase 8 — WS Streaming | 9.1 Redis channels ✅, 9.2 WS relay ✅, 9.4 Backpressure ✅ | ✅ All Done | Bharath / Sariya |
+| Phase 9 — Agent Orch. | 10.1 Decomp ✅, 10.2 Task graph ✅, 10.3 Assignment ✅, 10.4 Reallocation ✅, 10.5 Stopping ✅ | ✅ All Done | Chinmay / Rahil |
+| Phase 10 — Commands | 11.1 Command protocol ✅, 11.2 Watchdog ✅, 11.3 Parallel dispatch ✅, 11.4 Aggregation ✅ | ✅ All Done | Chinmay / Rahil |
+| Phase 11 — Synthesis | 12.1 Pre-synthesis ✅, 12.2 Briefing ✅, 12.3 Spoken delivery ✅ | ✅ All Done | Rahil |
+| Phase 12 — Observability | 13.1 Logging ✅, 13.2 Metrics ✅, 13.3 Dashboards ✅, 13.4 Tracing ✅, 13.5 DLQ ✅ | ✅ All Done | Bharath / Chinmay |
+| Phase 13 — Demo | 14.1 Seed script ✅, 14.2 Mock mode ✅, 14.3 Reset endpoint ✅, 14.4 Diagram ✅, 14.5 Load test ✅ | ✅ All Done | Bharath |
 
 **Session 6 — E2E bug fixes & integration tests:** EVIDENCE_FOUND payload fixed in frontend (use payload not payload.evidence); evidence API and Redis publish include `created_at` alias; Voice Gateway handles text frames (interrupt), multi-turn loop, and `trigger_response()` after tool results; PATCH /missions enforces valid state transitions (409 for invalid); `backend/tests/test_integration.py` — 43 tests covering health, mission CRUD, state machine, evidence ingest/list, WS relay, SonicSession.trigger_response.
 
-**Session 7 — All Chinmay tasks complete (16/16):** Implemented all 13 remaining tasks: VAD (`backend/gateway/vad.py`) + `docs/VOICE_FORMAT.md`; browser agent system (`agents/browser_session.py` Nova Act + Playwright fallback, `agents/pool.py` 6-agent Redis pool, `agents/lifecycle.py` state machine + heartbeat, `agents/evidence_emitter.py` claim extraction + POST /evidence); 7 agent prompts in `agents/prompts/`; planning logic (`backend/orchestrator/task_graph.py` dependency resolution, `backend/orchestrator/assignment.py` greedy priority assignment); orchestration (`agents/schemas.py` + `agents/command_channel.py` Redis command protocol + parallel dispatch via TaskGroup, `backend/orchestrator/watchdog.py` heartbeat timeout reclamation). Fixed lifecycle state sync bug (IDLE→BROWSING invalid transition). **52 new unit tests** in `tests/test_agents_core.py` + `tests/test_agents_async.py` — all passing. **Total: 35/68 tasks done (51%).**
+**Session 7 — All Chinmay tasks complete (16/16):** Implemented all 13 remaining tasks: VAD (`backend/gateway/vad.py`) + `docs/VOICE_FORMAT.md`; browser agent system (`agents/browser_session.py` Nova Act + Playwright fallback, `agents/pool.py` 6-agent Redis pool, `agents/lifecycle.py` state machine + heartbeat, `agents/evidence_emitter.py` claim extraction + POST /evidence); 7 agent prompts in `agents/prompts/`; planning logic (`backend/orchestrator/task_graph.py` dependency resolution, `backend/orchestrator/assignment.py` greedy priority assignment); orchestration (`agents/schemas.py` + `agents/command_channel.py` Redis command protocol + parallel dispatch via TaskGroup, `backend/orchestrator/watchdog.py` heartbeat timeout reclamation). Fixed lifecycle state sync bug (IDLE→BROWSING invalid transition). **52 new unit tests** in `tests/test_agents_core.py` + `tests/test_agents_async.py` — all passing.
+
+**Session 8 — All remaining tasks complete (68/68):** Merged Rahil's PR #4 (7.2–7.5 vectors, 10.4–10.5 reallocation/stopping, 11.4 aggregation, 12.1–12.3 synthesis — 55 tests). Implemented 10 remaining tasks across 3 parallel workstreams: **AWS CDK Infra (2.2–2.6)** — `redis-stack.ts` ElastiCache single-node, `rds-stack.ts` Postgres 16 with Secrets Manager, `s3-stack.ts` evidence bucket with lifecycle, `opensearch-stack.ts` Serverless VECTORSEARCH, `iam-stack.ts` least-privilege ECS task role; refactored VPC/ECS stacks for SG sharing. **Orchestrator (4.3, 4.5)** — `context_packet.py` parallel fetch via asyncio.gather, `planning_loop.py` 10s OODA cycle with stopping/reallocation/assignment/dispatch. **Observability (13.2–13.4)** — `metrics.py` CloudWatch batched emission with DEMO_MODE fallback, `tracing.py` X-Ray middleware + subsegment helpers, `dashboards-stack.ts` CDK dashboard with alarms. **23 new tests** (11 orchestrator + 12 observability) — all passing. **177 total backend tests passing, 0 failures.** CDK compiles cleanly. **Total: 68/68 tasks done (100%).**
 
 ### What Is Live Right Now
 
