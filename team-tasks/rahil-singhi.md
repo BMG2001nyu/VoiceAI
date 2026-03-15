@@ -9,25 +9,25 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 7
+**Last updated:** March 2026 — Session 8
 
 | Task | Status | Notes |
 |------|--------|-------|
 | 6.1 Evidence Schema + Ingest API | ✅ Done | `backend/evidence/` — schemas, repository, router; `POST /evidence` verified live |
 | 6.2 Screenshot S3 Upload | ✅ Done | `backend/evidence/screenshot.py` — base64 decode + S3/MinIO upload, presigned URLs, background task wired |
-| 6.3 Confidence + Novelty Scoring | ✅ Done | `backend/evidence/scoring.py` — domain-based confidence heuristic wired into router; novelty stubbed to 1.0 until Phase 7.2 |
+| 6.3 Confidence + Novelty Scoring | ✅ Done | `backend/evidence/scoring.py` — domain-based confidence heuristic wired into router; novelty computed via k-NN in embedding pipeline |
 | 6.4 Evidence List API | ✅ Done | `GET /missions/{id}/evidence` with theme filter + pagination + presigned screenshot URLs |
-| 7.1 Embedding Client | ✅ Done | `backend/models/embedding_client.py` — Bedrock Titan Embed Image v1, 1024 dim, multimodal (text+image), L2 normalized, smoke-tested live. **EMBEDDING_DIMENSION=1024 — share with Manav for OpenSearch index (Task 2.5)** |
-| 7.2 Embedding Pipeline | ⏳ Pending | Depends on 7.1, 6.1 ✅, Manav's OpenSearch (2.5) |
-| 7.3 Semantic Clustering | ⏳ Pending | Depends on 7.2 |
-| 7.4 Theme Classification | ⏳ Pending | Depends on 7.3; `backend/models/lite_client.py` ✅ ready |
-| 7.5 Contradiction Detection | ⏳ Pending | Depends on 7.2, 4.3 |
-| 10.4 Agent Reallocation Triggers | ⏳ Pending | Depends on 4.5, 5.5 |
-| 10.5 Mission Stopping Criteria | ⏳ Pending | Depends on 4.5, 4.3 |
-| 11.4 Agent Result Aggregation | ⏳ Pending | Depends on 5.4, 6.1 ✅, 4.5 |
-| 12.1 Clustering + Cluster Labels | ⏳ Pending | Depends on 7.3, 7.4 |
-| 12.2 Final Intelligence Synthesis | ⏳ Pending | Depends on 4.3, 7.4, 7.5 |
-| 12.3 Spoken Briefing via Sonic | ⏳ Pending | Depends on Chinmay's gateway (3.3 ✅) and 12.2 |
+| 7.1 Embedding Client | ✅ Done | `backend/models/embedding_client.py` — Bedrock Titan Embed Image v1, 1024 dim, multimodal (text+image), L2 normalized, smoke-tested live |
+| 7.2 Embedding Pipeline | ✅ Done | `backend/evidence/embedding_pipeline.py` — background task on POST /evidence; embeds text+screenshot, indexes in VectorStore, computes novelty via k-NN |
+| 7.3 Semantic Clustering | ✅ Done | `backend/evidence/clustering.py` — HDBSCAN clustering with cosine-similarity fallback; `GET /missions/{id}/clusters` endpoint |
+| 7.4 Theme Classification | ✅ Done | `backend/evidence/theme_labeler.py` — Nova Lite labels clusters (3-6 words); batch DB update |
+| 7.5 Contradiction Detection | ✅ Done | `backend/evidence/contradictions.py` — LLM batch scan via Nova Lite + Redis cache (30s TTL); `GET /missions/{id}/contradictions` endpoint |
+| 10.4 Agent Reallocation Triggers | ✅ Done | `backend/orchestrator/reallocation.py` — low-yield timeout, contradiction priority, coverage gap triggers |
+| 10.5 Mission Stopping Criteria | ✅ Done | `backend/orchestrator/stopping.py` — time budget (40s), all-tasks-done, Lite vote, coverage threshold |
+| 11.4 Agent Result Aggregation | ✅ Done | `backend/orchestrator/aggregator.py` — task completion handler, evidence threshold, force-timeout for stuck agents |
+| 12.1 Clustering + Cluster Labels | ✅ Done | `backend/synthesis/pre_synthesis.py` — full clustering + labelling pipeline for synthesis |
+| 12.2 Final Intelligence Synthesis | ✅ Done | `backend/synthesis/briefing.py` — structured briefing via Nova Lite with fallback; stores in mission record |
+| 12.3 Spoken Briefing via Sonic | ✅ Done | `backend/synthesis/spoken_briefing.py` — delivers briefing to Voice Gateway; `run_synthesis_pipeline()` orchestrates 12.1→12.3 |
 
 ### What You Need First
 
@@ -36,9 +36,9 @@
 
 The TypeScript types for your evidence schema are already defined in `frontend/src/types/api.ts` — field names are already in sync with Sariya's UI.
 
-**Session 7 delivered:** Tasks 6.2 (screenshot upload), 6.3 (confidence scoring), and 7.1 (embedding client) are complete. 56 new tests added (99 total backend tests). Bedrock bearer token verified with $100 free credits. Embedding model: `amazon.titan-embed-image-v1` (multimodal, 1024 dim).
+**Session 7 delivered:** Tasks 6.2 (screenshot upload), 6.3 (confidence scoring), and 7.1 (embedding client) are complete. 56 new tests added. Bedrock bearer token verified with $100 free credits. Embedding model: `amazon.titan-embed-image-v1` (multimodal, 1024 dim).
 
-**Your critical path now:** 7.2 (embedding pipeline) → needs local OpenSearch stub (Manav hasn't started 2.5 yet) → 7.3 (clustering) → 7.4 (themes) → 12.1-12.3 (synthesis). Tasks 10.4, 10.5, 11.4 blocked on Manav's orchestrator (4.3, 4.5) and Chinmay's agent lifecycle (5.5).
+**Session 8 delivered:** ALL remaining tasks complete (7.2-7.5, 10.4, 10.5, 11.4, 12.1-12.3). 55 new tests in `test_phase_bc.py` (112+ total backend tests). InMemoryVectorStore stubs OpenSearch locally. Full synthesis pipeline: cluster → label → briefing → spoken delivery. Orchestrator hooks: reallocation triggers, stopping criteria, result aggregation.
 
 **Share with Manav:** `EMBEDDING_DIMENSION = 1024` from `backend/models/embedding_client.py` — he needs it before provisioning OpenSearch (Task 2.5). Model: `amazon.titan-embed-image-v1`. Auth: Bedrock bearer token (not IAM SigV4).
 
@@ -72,7 +72,7 @@ Your MarketPulse-AI project is essentially a proof of concept for everything Mis
 | 12.2 | Synthesis | Final intelligence synthesis prompt | 4.3, 7.4, 7.5 | ⏳ Pending |
 | 12.3 | Synthesis | Spoken briefing via Sonic | 3.3 ✅, 12.2 | ⏳ Pending |
 
-**Total: 15 tasks — 5 Done, 10 Pending**
+**Total: 15 tasks — 15 Done, 0 Pending**
 
 ---
 

@@ -19,6 +19,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["evidence"])
 
 
+async def _run_embedding_background(evidence: dict, db: asyncpg.Pool) -> None:
+    """Background task: embed evidence and compute novelty."""
+    try:
+        from evidence.embedding_pipeline import run_embedding_pipeline
+
+        await run_embedding_pipeline(evidence, db)
+    except Exception as exc:
+        logger.error(
+            "Embedding pipeline failed for evidence %s: %s", evidence.get("id"), exc
+        )
+
+
 async def _upload_screenshot_background(
     evidence_id: str,
     mission_id: str,
@@ -91,6 +103,9 @@ async def ingest_evidence(
     except Exception as exc:
         logger.warning("Could not publish EVIDENCE_FOUND: %s", exc)
 
+    # Kick off embedding pipeline as background task (non-blocking)
+    background_tasks.add_task(_run_embedding_background, dict(row), db)
+
     return EvidenceResponse(**row)
 
 
@@ -121,3 +136,37 @@ async def list_evidence(
         results.append(resp)
 
     return results
+
+
+@router.get("/missions/{mission_id}/clusters")
+async def get_clusters(
+    mission_id: str,
+    db: asyncpg.Pool = Depends(get_db),
+):
+    """Run semantic clustering on mission evidence (debug/analysis endpoint)."""
+    from evidence.clustering import cluster_evidence
+
+    clusters = await cluster_evidence(mission_id)
+    return [
+        {"cluster_id": c.cluster_id, "evidence_ids": c.evidence_ids} for c in clusters
+    ]
+
+
+@router.get("/missions/{mission_id}/contradictions")
+async def get_contradictions(
+    mission_id: str,
+    db: asyncpg.Pool = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+):
+    """Detect contradictions among mission evidence."""
+    from evidence.contradictions import detect_contradictions
+
+    results = await detect_contradictions(mission_id, db, redis)
+    return [
+        {
+            "evidence_id_a": c.evidence_id_a,
+            "evidence_id_b": c.evidence_id_b,
+            "description": c.description,
+        }
+        for c in results
+    ]
