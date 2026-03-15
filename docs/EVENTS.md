@@ -138,8 +138,59 @@ These populate the Mission Timeline panel.
 }
 ```
 
-**Event type values:** `agent_assigned`, `evidence_found`, `agent_redirected`,
-`agent_timeout`, `synthesis_start`, `mission_complete`, `contradiction_detected`
+**Event type values:** `agent_assigned`, `agent_redirected`, `agent_timeout`,
+`evidence_found`, `contradiction_detected`, `mission_synthesizing`, `synthesis_start`,
+`mission_complete`
+
+#### Planning-loop timeline events (Session 8)
+
+The orchestrator planning loop (`backend/orchestrator/planning_loop.py`) publishes
+these additional timeline events:
+
+**`agent_assigned`** — Published when the planning loop assigns a task to an agent:
+
+```json
+{
+  "id": "uuid",
+  "type": "agent_assigned",
+  "description": "Agent agent_0 assigned: Scrape sequoiacap.com for portfolio",
+  "timestamp": "2026-03-08T12:00:05Z",
+  "payload": {
+    "agent_id": "agent_0",
+    "task_id": "uuid",
+    "objective": "Scrape sequoiacap.com for portfolio and partners"
+  }
+}
+```
+
+**`agent_redirected`** — Published when the planning loop redirects an agent to a new objective:
+
+```json
+{
+  "id": "uuid",
+  "type": "agent_redirected",
+  "description": "Agent agent_3 redirected: low yield timeout",
+  "timestamp": "2026-03-08T12:01:00Z",
+  "payload": {
+    "agent_id": "agent_3",
+    "reason": "low_yield_timeout"
+  }
+}
+```
+
+**`mission_synthesizing`** — Published when the planning loop triggers synthesis:
+
+```json
+{
+  "id": "uuid",
+  "type": "mission_synthesizing",
+  "description": "Mission transitioning to synthesis: time_budget_exceeded",
+  "timestamp": "2026-03-08T12:01:30Z",
+  "payload": {
+    "reason": "time_budget_exceeded"
+  }
+}
+```
 
 **Frontend handler:** `addTimelineEvent(msg.payload)`
 

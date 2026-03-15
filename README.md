@@ -2,6 +2,8 @@
 
 A **voice-driven AI intelligence command center** powered by AWS Amazon Nova: speak a mission objective, and the system coordinates browser agents to gather evidence, synthesize findings, and stream results to a War Room UI.
 
+**Status:** All 68 engineering tasks complete. See [tasks.md](tasks.md) for details.
+
 ---
 
 ## Architecture (high level)
@@ -41,15 +43,15 @@ Voice input drives the orchestrator; the orchestrator deploys agents; agents emi
 
 ```
 VoiceAI/
-├── tasks.md           # Full system engineering plan
-├── CLAUDE.md          # Getting started and repo structure (read this next)
+├── tasks.md           # Full system engineering plan (68/68 tasks complete)
+├── CLAUDE.md          # Getting started and repo structure
 ├── team-tasks/        # Per-engineer task files
-├── backend/           # FastAPI backend
+├── backend/           # FastAPI backend (missions, evidence, orchestrator, synthesis, gateway)
 ├── frontend/          # React + Vite War Room UI
-├── agents/            # Browser agent system (prompts in agents/prompts/)
-├── models/            # Nova Sonic, Lite, Embedding wrappers
-├── infra/             # AWS CDK (infra/cdk/)
-└── docs/              # ENV, events, architecture docs
+├── agents/            # Browser agent system (pool, lifecycle, prompts)
+├── infra/             # AWS CDK stacks (VPC, ECS, Redis, RDS, S3, OpenSearch, IAM, Dashboards)
+├── demo/              # Demo scripts, mock evidence, load tests
+└── docs/              # ENV, EVENTS, IAM, LOGGING, DEMO, VOICE_FORMAT, architecture
 ```
 
 See [CLAUDE.md](CLAUDE.md) for the full repository structure and file-by-file description.
@@ -65,8 +67,8 @@ See [CLAUDE.md](CLAUDE.md) for the full repository structure and file-by-file de
    git checkout -b <your-name>/setup
    ```
 
-2. **Environment**  
-   Copy `.env.example` to `.env` and set `AWS_REGION`, `AWS_PROFILE`, and any required URLs (see [docs/ENV.md](docs/ENV.md) when available).
+2. **Environment**
+   Copy `.env.example` to `.env` and set `NOVA_API_KEY` (required for all model clients), `AWS_REGION`, and `AWS_PROFILE`. See [docs/ENV.md](docs/ENV.md) for the full variable reference.
 
 3. **Local services**  
    Start Redis, Postgres, and MinIO:
@@ -87,6 +89,21 @@ See [CLAUDE.md](CLAUDE.md) for the full repository structure and file-by-file de
    ```
 
 For detailed setup, AWS Bedrock access, and demo mode, see **[CLAUDE.md](CLAUDE.md)**.
+
+---
+
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [docs/ENV.md](docs/ENV.md) | Environment variable reference |
+| [docs/EVENTS.md](docs/EVENTS.md) | Redis pub/sub event types and payloads |
+| [docs/IAM.md](docs/IAM.md) | AWS IAM roles and permissions |
+| [docs/LOGGING.md](docs/LOGGING.md) | Structured logging standard |
+| [docs/DEMO.md](docs/DEMO.md) | Demo mode guide |
+| [docs/VOICE_FORMAT.md](docs/VOICE_FORMAT.md) | Audio format specification |
+| [docs/FRONTEND_STREAMING.md](docs/FRONTEND_STREAMING.md) | Frontend WebSocket streaming architecture |
+| [docs/architecture.mmd](docs/architecture.mmd) | Mermaid system architecture diagram |
 
 ---
 

@@ -110,6 +110,18 @@ Variables are loaded by `backend/config.py` via `pydantic-settings`. Any variabl
 - **Local dev:** Set to `true` if you do not have AWS Bedrock access yet.
 - **AWS deployment:** Always `false`.
 
+### `AGENT_POOL_SIZE`
+- **What it does:** Number of browser agents in the pool. Each agent runs one browsing task at a time.
+- **Default:** `6`
+- **Local dev:** Keep default. Reduce to `2` for faster startup during testing.
+- **AWS deployment:** `6` (matched to ECS task CPU allocation).
+
+### `BACKEND_URL`
+- **What it does:** Base URL for the backend API. Used by browser agents to POST evidence.
+- **Default:** `http://localhost:8000`
+- **Local dev:** Keep default.
+- **AWS deployment:** Set to the ALB DNS output from CDK (e.g., `http://<alb-dns>`).
+
 ### `API_KEY`
 - **What it does:** Static bearer token checked on all backend API routes (`X-API-Key` header). Change before any public deployment.
 - **Default:** `changeme`
@@ -119,6 +131,22 @@ Variables are loaded by `backend/config.py` via `pydantic-settings`. Any variabl
   ```bash
   aws secretsmanager get-secret-value --secret-id mission-control/api-key --query SecretString --output text
   ```
+
+---
+
+## Nova API
+
+### `NOVA_API_KEY`
+- **What it does:** Bearer token for the Nova API at `api.nova.amazon.com`. Used by `models/lite_client.py` and `models/sonic_client.py` for all model inference.
+- **Default:** None — **required for model clients.**
+- **Local dev:** Get from [api.nova.amazon.com](https://api.nova.amazon.com). Set in `.env`.
+- **AWS deployment:** Not used when migrated to Bedrock. Use `AWS_BEARER_TOKEN_BEDROCK` instead.
+
+### `AWS_BEARER_TOKEN_BEDROCK`
+- **What it does:** Bearer token for direct Bedrock API access. When set, model clients use boto3 Bedrock instead of the Nova API.
+- **Default:** None (uses Nova API key instead)
+- **Local dev:** Not needed if using Nova API.
+- **AWS deployment:** Set for production Bedrock access with higher rate limits.
 
 ---
 
