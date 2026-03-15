@@ -13,12 +13,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from evidence.dlq import dlq_worker
+from logging_config import configure_logging
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    json_logs = not settings.demo_mode  # Pretty console in demo, JSON in prod
+    configure_logging(level=settings.log_level, json_output=json_logs)
+
     # asyncpg needs a plain postgresql:// DSN (strips SQLAlchemy prefix).
     dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
     app.state.db = await asyncpg.create_pool(dsn=dsn, min_size=2, max_size=10)
@@ -78,3 +82,8 @@ app.include_router(voice_router)
 from routers.internal import router as internal_router  # noqa: E402
 
 app.include_router(internal_router)
+
+if settings.demo_mode:
+    from routers.demo import router as demo_router  # noqa: E402
+
+    app.include_router(demo_router)

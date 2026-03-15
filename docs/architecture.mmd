@@ -1,0 +1,69 @@
+%% Mission Control — System Architecture
+%% Enhanced from tasks.md system overview diagram
+%% Render with: https://mermaid.live or `mmdc -i architecture.mmd -o architecture.svg`
+
+flowchart TB
+  subgraph client [Client]
+    WarRoom[War Room UI<br/>React + Zustand]
+    Mic[Microphone]
+    Speaker[Speaker]
+  end
+
+  subgraph voice [Voice Commander]
+    Sonic[Amazon Nova 2 Sonic<br/>Real-time Voice]
+    Tools[5 Tool Schemas<br/>start_mission / get_status<br/>get_findings / ask_user<br/>deliver_briefing]
+    Sonic --> Tools
+  end
+
+  subgraph backend [Backend - FastAPI]
+    VoiceGW[Voice Gateway<br/>/ws/voice]
+    Orch[Mission Orchestrator<br/>Nova 2 Lite]
+    CtxBuilder[Task Graph +<br/>Assignment Engine]
+    EvidenceSvc[Evidence Service<br/>POST /evidence]
+    MissionAPI[Mission API<br/>CRUD + State Machine]
+    WSRelay[WS Relay<br/>/ws/mission/id]
+    DLQ[Dead-Letter Queue<br/>Redis + Retry Worker]
+    Watchdog[Heartbeat Watchdog<br/>30s Scan]
+  end
+
+  subgraph data [Data Layer]
+    Redis[(Redis 7<br/>Pub/Sub + Agent State)]
+    DB[(PostgreSQL 16<br/>Missions + Evidence)]
+    S3[(S3 / MinIO<br/>Screenshots)]
+    VecStore[(OpenSearch<br/>Embeddings)]
+  end
+
+  subgraph agents [Browser Agent Fleet]
+    Pool[Agent Pool<br/>6 Named Agents]
+    A1[Official Site Agent]
+    A2[News/Blog Agent]
+    A3[Reddit/HN Agent]
+    A4[GitHub Agent]
+    A5[Financial Agent]
+    A6[Recent News Agent]
+    Pool --> A1 & A2 & A3 & A4 & A5 & A6
+  end
+
+  Mic --> VoiceGW
+  VoiceGW <--> Sonic
+  Sonic --> VoiceGW
+  VoiceGW --> Speaker
+  WarRoom <--> WSRelay
+
+  VoiceGW --> MissionAPI
+  MissionAPI --> Orch
+  Orch --> CtxBuilder
+  CtxBuilder --> Pool
+
+  A1 & A2 & A3 & A4 & A5 & A6 --> EvidenceSvc
+  EvidenceSvc --> DB
+  EvidenceSvc --> Redis
+  EvidenceSvc --> S3
+  EvidenceSvc --> VecStore
+
+  Redis --> WSRelay
+  Watchdog --> Pool
+  DLQ --> EvidenceSvc
+
+  MissionAPI --> DB
+  Pool --> Redis

@@ -1,0 +1,110 @@
+[
+  {
+    "agent_id": "agent_0",
+    "claim": "Sequoia has 8 active AI-focused partners including Sonya Huang and Pat Grady",
+    "summary": "Sequoia's website lists 8 partners with explicit AI/ML expertise. Sonya Huang leads AI investments, Pat Grady focuses on growth-stage AI companies.",
+    "source_url": "https://sequoiacap.com/people",
+    "snippet": "Our AI practice is led by Sonya Huang, who joined in 2020 and has backed companies in foundation models, infrastructure, and applied AI.",
+    "theme": "Partner Priorities",
+    "confidence": 0.95
+  },
+  {
+    "agent_id": "agent_0",
+    "claim": "Sequoia's investment thesis focuses on 'crucible moments' — inflection points in technology",
+    "summary": "Sequoia describes its approach as investing at 'crucible moments' where technology shifts create outsized opportunities. AI is currently their top crucible moment.",
+    "source_url": "https://sequoiacap.com/about",
+    "snippet": "We look for crucible moments — inflections where bold founders can build category-defining companies.",
+    "theme": "Strategy",
+    "confidence": 0.88
+  },
+  {
+    "agent_id": "agent_1",
+    "claim": "Sequoia led a $60M Series B in autonomous driving startup Wayve in late 2024",
+    "summary": "TechCrunch reported Sequoia Capital participated as lead investor in Wayve's $60M Series B round announced Q4 2024, signaling continued interest in embodied AI.",
+    "source_url": "https://techcrunch.com/2024/wayve-series-b",
+    "snippet": "Sequoia Capital led Wayve's $60 million Series B, betting on the London-based startup's approach to self-driving.",
+    "theme": "AI Portfolio",
+    "confidence": 0.91
+  },
+  {
+    "agent_id": "agent_1",
+    "claim": "Sequoia invested in 3 AI infrastructure companies in H1 2025",
+    "summary": "VentureBeat reports Sequoia backed three AI infrastructure startups in the first half of 2025, focusing on inference optimization and GPU orchestration.",
+    "source_url": "https://venturebeat.com/2025/sequoia-ai-infra",
+    "snippet": "Sequoia has quietly built a portfolio of three AI infrastructure bets in 2025, all focused on making inference cheaper and faster.",
+    "theme": "AI Portfolio",
+    "confidence": 0.84
+  },
+  {
+    "agent_id": "agent_2",
+    "claim": "Founders report slow term sheet turnaround (2-3 weeks) compared to a16z",
+    "summary": "Multiple Hacker News threads from 2024 cite Sequoia taking 2-3 weeks to issue term sheets versus a16z doing same-day decisions for competitive deals.",
+    "source_url": "https://news.ycombinator.com/item?id=39012345",
+    "snippet": "Applied to both Sequoia and a16z. a16z gave us a term sheet the same day. Sequoia took 18 days. By then we'd already signed.",
+    "theme": "Founder Complaints",
+    "confidence": 0.73
+  },
+  {
+    "agent_id": "agent_2",
+    "claim": "Reddit sentiment indicates Sequoia partners are seen as 'hands-off' post-investment",
+    "summary": "Several r/startups threads describe Sequoia partners as providing strong initial support but becoming hands-off after the first board meeting cycle.",
+    "source_url": "https://reddit.com/r/startups/comments/abc123",
+    "snippet": "Sequoia was great during the raise but after the first board meeting, our partner basically disappeared. Had to chase them for intros.",
+    "theme": "Founder Complaints",
+    "confidence": 0.68
+  },
+  {
+    "agent_id": "agent_3",
+    "claim": "Sequoia portfolio companies collectively have 450+ public GitHub repos with 120K+ stars",
+    "summary": "Analysis of GitHub organizations linked to Sequoia portfolio companies shows significant open-source presence, particularly in AI tooling and developer infrastructure.",
+    "source_url": "https://github.com/sequoia-portfolio",
+    "snippet": "Top repos by stars: vLLM (inference engine, 28K stars), LangChain (AI framework, 74K stars), both Sequoia-backed.",
+    "theme": "Technical",
+    "confidence": 0.82
+  },
+  {
+    "agent_id": "agent_3",
+    "claim": "AI portfolio companies show 40% higher commit frequency than non-AI Sequoia portfolio",
+    "summary": "GitHub activity analysis shows Sequoia's AI-focused portfolio companies average 340 commits/month versus 240 for non-AI companies, indicating higher development velocity.",
+    "source_url": "https://github.com/trending",
+    "snippet": "Comparing 6-month commit histories across 15 Sequoia companies: AI companies averaged 2,040 commits vs 1,440 for non-AI.",
+    "theme": "Technical",
+    "confidence": 0.71
+  },
+  {
+    "agent_id": "agent_4",
+    "claim": "Sequoia's latest fund (Fund XV) closed at $2.85B in 2024",
+    "summary": "SEC filings and Crunchbase data show Sequoia's US/Europe Fund XV closed at approximately $2.85 billion, making it their largest fund to date.",
+    "source_url": "https://crunchbase.com/organization/sequoia-capital",
+    "snippet": "Sequoia Capital U.S./Europe Fund XV, L.P. — $2,850,000,000 — Filed December 2024",
+    "theme": "Financial",
+    "confidence": 0.89
+  },
+  {
+    "agent_id": "agent_4",
+    "claim": "Sequoia has deployed $1.2B into AI companies since 2023",
+    "summary": "Crunchbase data aggregation shows Sequoia has invested approximately $1.2 billion across 28 AI-focused companies since January 2023.",
+    "source_url": "https://crunchbase.com/discover/sequoia-ai",
+    "snippet": "Total AI investment: ~$1.2B across 28 companies. Average check size: $42.8M. Median stage: Series B.",
+    "theme": "Financial",
+    "confidence": 0.85
+  },
+  {
+    "agent_id": "agent_5",
+    "claim": "Sequoia publicly stated AI will represent 60% of new investments in 2025",
+    "summary": "In a January 2025 keynote, Sequoia managing partner Roelof Botha stated that AI-related investments would represent approximately 60% of new deals in 2025.",
+    "source_url": "https://reuters.com/technology/sequoia-ai-strategy-2025",
+    "snippet": "Botha told the audience that 'AI will be the dominant theme in our investment activity this year, representing roughly 60% of new commitments.'",
+    "theme": "Strategy",
+    "confidence": 0.92
+  },
+  {
+    "agent_id": "agent_5",
+    "claim": "Sequoia is reportedly building an internal AI research lab for portfolio due diligence",
+    "summary": "Recent news reports indicate Sequoia is assembling a small internal AI research team to automate parts of the due diligence process for potential investments.",
+    "source_url": "https://theinformation.com/sequoia-ai-lab",
+    "snippet": "Sources say Sequoia has hired 4 ML engineers to build internal tools that use LLMs to analyze pitch decks and market data.",
+    "theme": "Strategy",
+    "confidence": 0.76
+  }
+]
