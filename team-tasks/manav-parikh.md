@@ -13,7 +13,7 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 2.1 AWS Core Network & Compute | ⏳ Pending | Start here — everything else depends on VPC/ECS/ALB |
+| 2.1 AWS Core Network & Compute | ✅ Done | VPC, subnets, NAT, Fargate cluster, ALB with WS stickiness all defined in CDK. |
 | 2.2 Redis / ElastiCache | ⏳ Pending | Depends on 2.1 |
 | 2.3 Postgres RDS | ⏳ Pending | Depends on 2.1; use `infra/init.sql` schema |
 | 2.4 S3 Buckets | ⏳ Pending | Depends on 2.1 |
@@ -73,7 +73,7 @@ Your cloud engineering background (TA for Cloud Computing, AWS infra, Docker/K8s
 
 | Task | Phase | Description | Depends On | Status |
 |------|-------|-------------|------------|--------|
-| 2.1 | Infrastructure | AWS core network and compute (VPC, ECS Fargate, ALB) | Phase 1 | ⏳ Pending |
+| 2.1 | Infrastructure | AWS core network and compute (VPC, ECS Fargate, ALB) | Phase 1 | ✅ Done |
 | 2.2 | Infrastructure | Redis / ElastiCache cluster | 2.1 | ⏳ Pending |
 | 2.3 | Infrastructure | Postgres RDS or DynamoDB | 2.1 | ⏳ Pending |
 | 2.4 | Infrastructure | S3 buckets | 2.1 | ⏳ Pending |
