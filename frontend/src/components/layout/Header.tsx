@@ -1,5 +1,6 @@
 import { Radio, Cpu, AlertTriangle } from "lucide-react";
 import { clsx } from "clsx";
+import { useEffect } from "react";
 import { useMissionStore } from "../../store";
 import type { ConnectionStatus, MissionStatus } from "../../types/api";
 
@@ -55,7 +56,25 @@ function MissionStatusBadge({ status }: { status: MissionStatus }) {
 }
 
 export function Header() {
-  const { mission, connectionStatus } = useMissionStore();
+  const { mission, connectionStatus, dlqCount, setDlqCount } = useMissionStore();
+
+  useEffect(() => {
+    const pollDlq = async () => {
+      try {
+        const resp = await fetch("/api/internal/dlq/count");
+        if (resp.ok) {
+          const data = await resp.json();
+          setDlqCount(data.count);
+        }
+      } catch (err) {
+        // Silently fail polling
+      }
+    };
+
+    const interval = setInterval(pollDlq, 10000);
+    pollDlq();
+    return () => clearInterval(interval);
+  }, [setDlqCount]);
 
   return (
     <header className="border-b border-[#1e293b] flex items-center justify-between px-6 h-12 shrink-0 relative z-10">
@@ -84,9 +103,18 @@ export function Header() {
 
       {/* Right — system status */}
       <div className="flex items-center gap-5">
-        <button className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors text-xs">
+        <button
+          className={clsx(
+            "flex items-center gap-1.5 transition-colors text-xs",
+            dlqCount > 0
+              ? "text-accent-amber animate-pulse"
+              : "text-text-secondary hover:text-text-primary"
+          )}
+        >
           <AlertTriangle size={13} />
-          <span className="font-mono">0 retries</span>
+          <span className="font-mono">
+            {dlqCount} {dlqCount === 1 ? "retry" : "retries"}
+          </span>
         </button>
 
         <div className="flex items-center gap-1.5 text-text-secondary">

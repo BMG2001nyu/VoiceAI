@@ -173,6 +173,8 @@ interface MissionStore {
   timeline: TimelineEvent[];
   transcript: TranscriptEntry[];
   connectionStatus: ConnectionStatus;
+  dlqCount: number;
+  isMock: boolean;
 
   setMission: (m: MissionRecord) => void;
   updateAgent: (update: Partial<AgentState> & { agent_id: string }) => void;
@@ -180,6 +182,8 @@ interface MissionStore {
   addTimelineEvent: (ev: TimelineEvent) => void;
   addTranscriptEntry: (entry: TranscriptEntry) => void;
   setConnectionStatus: (s: ConnectionStatus) => void;
+  setDlqCount: (count: number) => void;
+  purgeMockData: () => void;
 }
 
 export const useMissionStore = create<MissionStore>((set) => ({
@@ -189,33 +193,62 @@ export const useMissionStore = create<MissionStore>((set) => ({
   timeline: MOCK_TIMELINE,
   transcript: MOCK_TRANSCRIPT,
   connectionStatus: "open",
+  dlqCount: 0,
+  isMock: true,
 
-  setMission: (m) => set({ mission: m }),
+  purgeMockData: () =>
+    set({
+      mission: null,
+      agents: [],
+      evidence: [],
+      timeline: [],
+      transcript: [],
+      isMock: false,
+    }),
+
+  setMission: (m) =>
+    set((state) => ({
+      mission: m,
+      isMock: false, // Receiving mission status always clears mock mode
+      ...(state.isMock
+        ? { agents: [], evidence: [], timeline: [], transcript: [] }
+        : {}),
+    })),
 
   updateAgent: (update) =>
     set((state) => {
-      const existing = state.agents.find((a) => a.agent_id === update.agent_id);
+      const agents = state.isMock ? [] : state.agents;
+      const existing = agents.find((a) => a.agent_id === update.agent_id);
       if (existing) {
         return {
-          agents: state.agents.map((a) =>
+          isMock: false,
+          agents: agents.map((a) =>
             a.agent_id === update.agent_id ? { ...a, ...update } : a
           ),
         };
       }
-      return { agents: [...state.agents, update as AgentState] };
+      return { isMock: false, agents: [...agents, update as AgentState] };
     }),
 
   addEvidence: (e) =>
     set((state) => {
-      if (state.evidence.some((ev) => ev.id === e.id)) return state;
-      return { evidence: [e, ...state.evidence] };
+      const evidence = state.isMock ? [] : state.evidence;
+      if (evidence.some((ev) => ev.id === e.id)) return state;
+      return { isMock: false, evidence: [e, ...evidence] };
     }),
 
   addTimelineEvent: (ev) =>
-    set((state) => ({ timeline: [ev, ...state.timeline] })),
+    set((state) => {
+      const timeline = state.isMock ? [] : state.timeline;
+      return { isMock: false, timeline: [ev, ...timeline] };
+    }),
 
   addTranscriptEntry: (entry) =>
-    set((state) => ({ transcript: [...state.transcript, entry] })),
+    set((state) => {
+      const transcript = state.isMock ? [] : state.transcript;
+      return { isMock: false, transcript: [...transcript, entry] };
+    }),
 
   setConnectionStatus: (s) => set({ connectionStatus: s }),
+  setDlqCount: (count) => set({ dlqCount: count }),
 }));
