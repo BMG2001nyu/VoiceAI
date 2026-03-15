@@ -34,7 +34,7 @@ This file is the single source of truth for getting your local environment runni
 | WS Mission Relay | ✅ Done | `backend/streaming/ws_relay.py` — `/ws/mission/{id}` subscribes Redis, forwards to browser; 574 ms pipe confirmed |
 | Voice Gateway | ✅ Done | `backend/gateway/voice_gateway.py` — `/ws/voice` bidirectional Nova Sonic bridge; all 5 tool handlers wired |
 | AWS Infra | ⏳ Pending | Manav — Tasks 2.1–2.6 |
-| Browser Agents | ⏳ Pending | Chinmay — Tasks 5.1–5.5 |
+| Browser Agents | ✅ Done | Chinmay — Tasks 5.1–5.5 (Session 7) |
 | Orchestrator Planning Loop | ⏳ Pending | Manav — Tasks 4.3, 4.5 |
 | Vector / Embeddings | ⏳ Pending | Rahil — Tasks 7.1–7.5 |
 | Evidence Scoring + Screenshots | ⏳ Pending | Rahil — Tasks 6.2–6.3 |
@@ -478,7 +478,7 @@ VoiceAI/
 │   ├── bharath-gera.md         ✅ 8/16 tasks done
 │   ├── manav-parikh.md         ✅ 4/14 tasks done (4.1–4.2, 9.1 by Bharath; 4.4 lite_client)
 │   ├── rahil-singhi.md         ✅ 2/15 tasks done (6.1 ingest, 6.4 list API)
-│   ├── chinmay-shringi.md      ✅ 3/16 tasks done (3.1, 3.2, 3.3 — voice gateway + Session 6 fixes)
+│   ├── chinmay-shringi.md      ✅ 16/16 tasks done (all complete — Session 7)
 │   └── sariya-rizwan.md        ✅ 9/11 tasks done (8.7 EVIDENCE_FOUND payload fix)
 │
 ├── .github/

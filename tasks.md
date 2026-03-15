@@ -4,7 +4,7 @@
 
 ## Implementation Progress
 
-**Last updated:** March 2026 — Session 6
+**Last updated:** March 2026 — Session 7
 
 | Phase | Tasks | Status | Owner |
 |-------|-------|--------|-------|
@@ -13,19 +13,21 @@
 | Phase 1 — Frontend State | 9.3 Zustand store + TypeScript types | ✅ Done | Sariya |
 | Phase 1 — WebSocket Hook | 8.7 WS hook (reconnection + EVIDENCE_FOUND payload fix) | ✅ Done | Sariya |
 | Phase 2 — AWS Infra | 2.7 Docker Compose ✅, 2.1–2.5 VPC/ECS/Redis/Postgres/S3/OpenSearch, 2.6 IAM | 🔄 1/7 Done | Manav / Bharath |
-| Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway ✅ (multi-turn, interrupt, trigger_response) | ✅ 3/5 Done | Chinmay |
+| Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway ✅, 3.4 VAD ✅, 3.5 Barge-in ✅ | ✅ All Done | Chinmay |
 | Phase 4 — Orchestrator | 4.4 Nova Lite ✅, 4.1 State machine ✅, 4.2 CRUD API ✅ (PATCH enforces valid transitions), 4.3, 4.5 | 🔄 3/5 Done | Bharath / Manav |
-| Phase 5 — Browser Agents | 5.1–5.5 Session manager, pool, prompts, evidence emission, lifecycle | ⏳ Pending | Chinmay |
+| Phase 5 — Browser Agents | 5.1 Session manager ✅, 5.2 Pool ✅, 5.3 Prompts ✅, 5.4 Evidence emission ✅, 5.5 Lifecycle ✅ | ✅ All Done | Chinmay |
 | Phase 6 — Evidence | 6.1–6.4 Schema, ingest, list API ✅ (created_at alias for frontend) | 🔄 2/4 Done | Rahil |
 | Phase 7 — Vectors | 7.1–7.5 Embeddings, pipeline, clustering, themes, contradiction detection | ⏳ Pending | Rahil |
 | Phase 8 — WS Streaming | 9.1 Redis channels ✅, 9.2 WS relay ✅, 9.4 Backpressure | 🔄 2/3 Done | Bharath / Sariya |
-| Phase 9 — Agent Orch. | 10.1–10.5 Decomp, graph, assignment, realloc, stopping | ⏳ Pending | Chinmay / Rahil |
-| Phase 10 — Commands | 11.1–11.4 Command protocol, watchdog, parallel dispatch, aggregation | ⏳ Pending | Chinmay / Rahil |
+| Phase 9 — Agent Orch. | 10.1 Decomp prompt ✅, 10.2 Task graph ✅, 10.3 Assignment ✅, 10.4–10.5 realloc/stopping | 🔄 3/5 Done | Chinmay / Rahil |
+| Phase 10 — Commands | 11.1 Command protocol ✅, 11.2 Watchdog ✅, 11.3 Parallel dispatch ✅, 11.4 aggregation | 🔄 3/4 Done | Chinmay / Rahil |
 | Phase 11 — Synthesis | 12.1–12.3 Clustering, briefing prompt, spoken delivery | ⏳ Pending | Rahil |
 | Phase 12 — Observability | 13.1–13.5 Logging, metrics, dashboards, tracing, DLQ | ⏳ Pending | Bharath / Manav / Sariya |
 | Phase 13 — Demo | 14.1–14.5 Demo script, mock mode, reset endpoint, diagram, load test | ⏳ Pending | Bharath |
 
 **Session 6 — E2E bug fixes & integration tests:** EVIDENCE_FOUND payload fixed in frontend (use payload not payload.evidence); evidence API and Redis publish include `created_at` alias; Voice Gateway handles text frames (interrupt), multi-turn loop, and `trigger_response()` after tool results; PATCH /missions enforces valid state transitions (409 for invalid); `backend/tests/test_integration.py` — 43 tests covering health, mission CRUD, state machine, evidence ingest/list, WS relay, SonicSession.trigger_response.
+
+**Session 7 — All Chinmay tasks complete (16/16):** Implemented all 13 remaining tasks: VAD (`backend/gateway/vad.py`) + `docs/VOICE_FORMAT.md`; browser agent system (`agents/browser_session.py` Nova Act + Playwright fallback, `agents/pool.py` 6-agent Redis pool, `agents/lifecycle.py` state machine + heartbeat, `agents/evidence_emitter.py` claim extraction + POST /evidence); 7 agent prompts in `agents/prompts/`; planning logic (`backend/orchestrator/task_graph.py` dependency resolution, `backend/orchestrator/assignment.py` greedy priority assignment); orchestration (`agents/schemas.py` + `agents/command_channel.py` Redis command protocol + parallel dispatch via TaskGroup, `backend/orchestrator/watchdog.py` heartbeat timeout reclamation). Fixed lifecycle state sync bug (IDLE→BROWSING invalid transition). **52 new unit tests** in `tests/test_agents_core.py` + `tests/test_agents_async.py` — all passing. **Total: 35/68 tasks done (51%).**
 
 ### What Is Live Right Now
 
@@ -74,6 +76,37 @@ Makefile                     dev-up / dev-down / dev-logs / dev-reset / psql / r
 docker-compose.yml           Redis 7 + Postgres 16 + MinIO + minio-init bucket creation
 infra/init.sql               missions, tasks, evidence tables with enums, indexes, auto-updated_at trigger
 docs/ENV.md                  Full variable reference
+docs/VOICE_FORMAT.md         Audio format spec: browser↔Sonic PCM16, VAD, barge-in protocol ✅
+
+agents/
+  __init__.py               Package init
+  browser_session.py        Nova Act session manager + Playwright fallback ✅
+  pool.py                   6-agent pool with Redis state tracking ✅
+  lifecycle.py              IDLE→ASSIGNED→BROWSING→REPORTING→IDLE + heartbeat ✅
+  evidence_emitter.py       Claim extraction (Nova Lite) + POST /evidence ✅
+  command_channel.py        Redis LPUSH/BRPOP command protocol + parallel dispatch ✅
+  schemas.py                AgentCommand, CommandType, AgentStatus ✅
+  prompts/
+    __init__.py             load_prompt() + available_prompts() ✅
+    official_site.txt       Company websites + investor relations ✅
+    news_blog.txt           TechCrunch, VentureBeat, blogs ✅
+    reddit_hn.txt           Reddit/HN sentiment ✅
+    github.txt              GitHub repos + tech footprint ✅
+    financial.txt           Crunchbase, SEC, fund data ✅
+    recent_news.txt         Breaking news (last 6 months) ✅
+    task_decomposition.txt  Mission → 4-8 typed tasks prompt ✅
+
+backend/
+  gateway/vad.py            Voice Activity Detection (webrtcvad, passthrough fallback) ✅
+  orchestrator/
+    __init__.py             Package init ✅
+    task_graph.py           TaskNode + dependency resolution + build_task_graph ✅
+    assignment.py           Greedy priority agent-to-task assignment ✅
+    watchdog.py             Heartbeat timeout reclamation (30s scan) ✅
+
+tests/
+  test_agents_core.py       27 tests — prompts, schemas, task graph, assignment, VAD ✅
+  test_agents_async.py      25 tests — pool, lifecycle, command channel, emitter, watchdog ✅
 ```
 
 ---

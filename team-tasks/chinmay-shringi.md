@@ -10,30 +10,30 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 6
+**Last updated:** March 2026 — Session 7
 
 | Task | Status | Notes |
 |------|--------|-------|
 | 3.1 Sonic Streaming Wrapper | ✅ Done | `backend/models/sonic_client.py` — Nova Realtime WebSocket, smoke-tested live |
 | 3.2 Sonic Tool Schemas | ✅ Done | `backend/models/sonic_tools.py` — 5 tools in Nova Realtime + Bedrock formats |
 | 3.3 Voice Gateway FastAPI + WS | ✅ Done | `backend/gateway/voice_gateway.py` — `/ws/voice` bidirectional Nova Sonic bridge; all 5 tool handlers live |
-| 3.4 Audio Chunking + VAD | ⏳ Pending | Optional; skip for demo if time-pressed |
-| 3.5 Barge-in / Interruption | ⏳ Pending | Depends on 3.3 ✅; `session.interrupt()` already in SonicSession |
-| 5.1 Nova Act Session Manager | ⏳ Pending | Check current AgentCore Browser / Nova Act SDK availability |
-| 5.2 Agent Pool | ⏳ Pending | Depends on 5.1, Redis (local Docker ✅) |
-| 5.3 Agent Prompts (6 types) | ⏳ Pending | Can start now — `agents/prompts/` dir exists |
-| 5.4 Evidence Emission | ⏳ Pending | Depends on 5.1, `POST /evidence` ✅ (Rahil, done) |
-| 5.5 Agent Lifecycle + Heartbeat | ⏳ Pending | Depends on 5.2, 4.5 |
-| 10.1 Task Decomposition Prompt | ⏳ Pending | `LiteClient.plan_tasks()` is ready — write prompts in `agents/prompts/` |
-| 10.2 Task Graph Dependency Res. | ⏳ Pending | Depends on 4.4 ✅, 4.5 |
-| 10.3 Agent-to-Task Assignment | ⏳ Pending | Depends on 5.2, 4.5 |
-| 11.1 Agent Command Protocol | ⏳ Pending | Depends on 5.2, 4.5 |
-| 11.2 Heartbeat Watchdog | ⏳ Pending | Depends on 5.5, 9.1 ✅ |
-| 11.3 Parallel Deployment | ⏳ Pending | Depends on 11.1, 10.3 |
+| 3.4 Audio Chunking + VAD | ✅ Done | `backend/gateway/vad.py` — webrtcvad wrapper with passthrough fallback; `docs/VOICE_FORMAT.md` written |
+| 3.5 Barge-in / Interruption | ✅ Done | Already working in gateway (`session.interrupt()`); documented in `docs/VOICE_FORMAT.md` |
+| 5.1 Nova Act Session Manager | ✅ Done | `agents/browser_session.py` — Nova Act + Playwright fallback + Nova Lite analysis |
+| 5.2 Agent Pool | ✅ Done | `agents/pool.py` — 6-agent Redis pool, claim/release, pool summary |
+| 5.3 Agent Prompts (6 types) | ✅ Done | `agents/prompts/` — 6 source-specialized prompts + `__init__.py` loader |
+| 5.4 Evidence Emission | ✅ Done | `agents/evidence_emitter.py` — Nova Lite claim extraction + POST /evidence |
+| 5.5 Agent Lifecycle + Heartbeat | ✅ Done | `agents/lifecycle.py` — IDLE→ASSIGNED→BROWSING→REPORTING→IDLE + heartbeat TTL |
+| 10.1 Task Decomposition Prompt | ✅ Done | `agents/prompts/task_decomposition.txt` — few-shot prompt for 4-8 typed tasks |
+| 10.2 Task Graph Dependency Res. | ✅ Done | `backend/orchestrator/task_graph.py` — TaskNode + get_available_tasks + build_task_graph |
+| 10.3 Agent-to-Task Assignment | ✅ Done | `backend/orchestrator/assignment.py` — greedy priority assignment with type preferences |
+| 11.1 Agent Command Protocol | ✅ Done | `agents/schemas.py` + `agents/command_channel.py` — Redis LPUSH/BRPOP command channel |
+| 11.2 Heartbeat Watchdog | ✅ Done | `backend/orchestrator/watchdog.py` — 30s scan, reclaims timed-out agents, emits TIMELINE_EVENT |
+| 11.3 Parallel Deployment | ✅ Done | `agents/command_channel.py` `dispatch_commands()` — asyncio.TaskGroup parallel dispatch |
 
-### Phase 3 Complete — Voice Gateway is Live ✅
+### All 16 Tasks Complete ✅
 
-Tasks 3.1, 3.2, and 3.3 are fully implemented. The Voice Gateway (`/ws/voice`) is live and all 5 tool call handlers are wired and tested.
+All phases implemented in Session 7: Voice Gateway (Phase 3), Browser Agents (Phase 5), Planning Logic (Phase 9), and Agent Orchestration (Phase 10). 52 unit tests added and passing.
 
 **Session 6 — Voice Gateway bug fixes (already applied):** (1) **browser_to_sonic** now uses `websocket.receive()` instead of `receive_bytes()`, so JSON control messages (e.g. `{"type":"interrupt"}` for barge-in) no longer crash the connection. (2) **sonic_to_browser** runs in an outer loop so multi-turn conversations work (previously exited after first response). (3) After each tool result, the gateway calls **`session.trigger_response()`** so Nova Sonic generates its follow-up reply (Nova Realtime API does not auto-continue after function_call_output). `SonicSession.trigger_response()` is in `backend/models/sonic_client.py`. Integration test: `pytest backend/tests/test_integration.py -k trigger_response -v`.
 
@@ -122,7 +122,7 @@ Your breadth across Python backend and TypeScript, plus experience with browser-
 | 11.2 | Orchestration | Heartbeat timeout watchdog | 5.5, 9.1 ✅ | ⏳ Pending |
 | 11.3 | Orchestration | Parallel deployment (asyncio) | 11.1 | ⏳ Pending |
 
-**Total: 16 tasks — 3 Done, 13 Pending**
+**Total: 16 tasks — 16 Done, 0 Pending**
 
 ---
 
