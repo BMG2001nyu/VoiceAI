@@ -138,13 +138,11 @@ async def _run_playwright(
                     pass  # Stay on search results
 
             # Extract page content
-            content = await page.evaluate(
-                """() => {
+            content = await page.evaluate("""() => {
                 const sel = document.querySelectorAll('article, main, [role="main"], .content, #content, body');
                 const el = sel[0] || document.body;
                 return el.innerText.slice(0, 15000);
-            }"""
-            )
+            }""")
 
             current_url = page.url
 
