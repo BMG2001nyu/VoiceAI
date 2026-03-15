@@ -8,7 +8,7 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 6
+**Last updated:** March 2026 — Session 7
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -22,12 +22,12 @@
 | 4.2 Mission CRUD API | ✅ Done | `POST /missions` (Nova Lite plan_tasks + Postgres), `GET /missions/{id}`, `PATCH /missions/{id}` — verified live |
 | 9.1 Redis Channels | ✅ Done | `backend/streaming/channels.py` + `docs/EVENTS.md` — full channel spec |
 | 9.2 WS Mission Relay | ✅ Done | `backend/streaming/ws_relay.py` — `/ws/mission/{id}` → 574 ms pipe confirmed |
-| 13.1 Structured Logging | ⏳ Pending | Needs Phase 4–6 in place (now they are — good time to add) |
-| 14.1 Demo Seed Script | ⏳ Pending | Needs Phase 5, 10 |
-| 14.2 Mock Mode | ⏳ Pending | Needs Phase 5, 6, 8 |
-| 14.3 Demo Reset Endpoint | ⏳ Pending | Needs Phase 4, 6, 9 |
-| 14.4 Architecture Diagram | ⏳ Pending | Can be done anytime |
-| 14.5 Load Test Script | ⏳ Pending | Needs Phase 4, 12 |
+| 13.1 Structured Logging | ✅ Done | `backend/logging_config.py` — structlog JSON/console + contextvars; `docs/LOGGING.md` |
+| 14.1 Demo Seed Script | ✅ Done | `demo/seed_sequoia.py` + `demo/run_demo.sh` — one-command Sequoia demo |
+| 14.2 Mock Mode | ✅ Done | `demo/mock_evidence.json` (12 records, 6 themes); `docs/DEMO.md` |
+| 14.3 Demo Reset Endpoint | ✅ Done | `backend/routers/demo.py` — `POST /demo/reset`; mounted when DEMO_MODE=true |
+| 14.4 Architecture Diagram | ✅ Done | `docs/architecture.mmd` — enhanced Mermaid diagram |
+| 14.5 Load Test Script | ✅ Done | `demo/load_test.py` — parallel missions, p50/p95, CSV output |
 
 ### Phase 1 — Complete ✅
 

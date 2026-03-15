@@ -475,7 +475,7 @@ VoiceAI/
 ├── Makefile                    ✅ dev-up/down/logs/reset/status + backend/frontend helpers
 │
 ├── team-tasks/                 ✅ All task files updated with current status
-│   ├── bharath-gera.md         ✅ 8/16 tasks done
+│   ├── bharath-gera.md         ✅ 15/16 tasks done (all except 2.6 IAM — blocked on Manav)
 │   ├── manav-parikh.md         ✅ 4/14 tasks done (4.1–4.2, 9.1 by Bharath; 4.4 lite_client)
 │   ├── rahil-singhi.md         ✅ 2/15 tasks done (6.1 ingest, 6.4 list API)
 │   ├── chinmay-shringi.md      ✅ 16/16 tasks done (all complete — Session 7)
