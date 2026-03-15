@@ -31,6 +31,7 @@ dev = [
     "anyio[trio]",
     "ruff",
     "black",
+    "moto[s3]>=5.0",
 ]
 
 [tool.setuptools]

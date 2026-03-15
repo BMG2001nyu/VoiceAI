@@ -36,6 +36,9 @@ class Settings(BaseSettings):
 
     # S3
     s3_bucket_evidence: str = "mission-control-evidence-dev"
+    aws_endpoint_url_s3: str = ""  # set to http://localhost:9000 for MinIO
+    aws_access_key_id: str = ""  # set to minioadmin for MinIO
+    aws_secret_access_key: str = ""  # set to minioadmin for MinIO
 
     # Vector store — required in AWS mode, optional when DEMO_MODE=true
     opensearch_endpoint: str = Field(default="")

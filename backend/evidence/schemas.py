@@ -19,6 +19,7 @@ class EvidenceIngest(BaseModel):
     novelty: float = Field(default=1.0, ge=0.0, le=1.0)
     theme: Optional[str] = None
     screenshot_s3_key: Optional[str] = None
+    screenshot_base64: Optional[str] = None  # raw base64 PNG from browser agent
 
 
 class EvidenceResponse(BaseModel):
@@ -33,6 +34,8 @@ class EvidenceResponse(BaseModel):
     novelty: float
     theme: Optional[str] = None
     screenshot_s3_key: Optional[str] = None
+    screenshot_url: Optional[str] = None  # presigned URL (generated on-the-fly)
+    embedding_id: Optional[str] = None
     timestamp: datetime
 
     model_config = {"from_attributes": True}

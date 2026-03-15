@@ -16,8 +16,8 @@
 | Phase 3 — Voice Gateway | 3.1 Sonic client ✅, 3.2 Tool schemas ✅, 3.3 WS gateway ✅, 3.4 VAD ✅, 3.5 Barge-in ✅ | ✅ All Done | Chinmay |
 | Phase 4 — Orchestrator | 4.4 Nova Lite ✅, 4.1 State machine ✅, 4.2 CRUD API ✅ (PATCH enforces valid transitions), 4.3, 4.5 | 🔄 3/5 Done | Bharath / Manav |
 | Phase 5 — Browser Agents | 5.1 Session manager ✅, 5.2 Pool ✅, 5.3 Prompts ✅, 5.4 Evidence emission ✅, 5.5 Lifecycle ✅ | ✅ All Done | Chinmay |
-| Phase 6 — Evidence | 6.1–6.4 Schema, ingest, list API ✅ (created_at alias for frontend) | 🔄 2/4 Done | Rahil |
-| Phase 7 — Vectors | 7.1–7.5 Embeddings, pipeline, clustering, themes, contradiction detection | ⏳ Pending | Rahil |
+| Phase 6 — Evidence | 6.1–6.4 Schema ✅, ingest ✅, screenshots ✅, confidence scoring ✅, list API ✅ | ✅ 4/4 Done | Rahil |
+| Phase 7 — Vectors | 7.1 Embedding client ✅ (Titan Embed Image v1, 1024 dim), 7.2–7.5 pipeline, clustering, themes, contradictions | 🔄 1/5 Done | Rahil |
 | Phase 8 — WS Streaming | 9.1 Redis channels ✅, 9.2 WS relay ✅, 9.4 Backpressure | 🔄 2/3 Done | Bharath / Sariya |
 | Phase 9 — Agent Orch. | 10.1 Decomp prompt ✅, 10.2 Task graph ✅, 10.3 Assignment ✅, 10.4–10.5 realloc/stopping | 🔄 3/5 Done | Chinmay / Rahil |
 | Phase 10 — Commands | 11.1 Command protocol ✅, 11.2 Watchdog ✅, 11.3 Parallel dispatch ✅, 11.4 aggregation | 🔄 3/4 Done | Chinmay / Rahil |
