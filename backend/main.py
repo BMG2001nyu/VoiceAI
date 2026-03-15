@@ -10,7 +10,6 @@ import asyncpg
 import redis.asyncio as aioredis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .gateway.ws_relay import router as relay_router
 
 from config import settings
 from evidence.dlq import dlq_worker
@@ -72,9 +71,6 @@ if not settings.demo_mode:
 
     app.add_middleware(XRayMiddleware)
 
-# Include common routers
-app.include_router(relay_router, tags=["relay"])
-
 
 @app.get("/health")
 async def health():
@@ -107,11 +103,3 @@ if settings.demo_mode:
     from routers.demo import router as demo_router  # noqa: E402
 
     app.include_router(demo_router)
-
-
-@app.get("/internal/dlq/count")
-async def dlq_count():
-    """Returns the size of the dead-letter queue (Task 13.5)."""
-    # In a real app, this would query LLEN on Redis.
-    # For now, return 0 or a mock value based on a query parameter for dev.
-    return {"count": 0}

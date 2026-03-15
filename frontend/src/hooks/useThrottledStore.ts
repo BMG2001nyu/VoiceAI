@@ -52,11 +52,13 @@ export function useThrottledStore() {
       const isBurst = batch.length > BURST_THRESHOLD;
 
       // Collapse AGENT_UPDATE: keep only latest per agent_id
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const agentUpdates = new Map<string, any>();
       const otherEvents: WSMessage[] = [];
 
       for (const msg of batch) {
         if (msg.type === "AGENT_UPDATE") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const p = msg.payload as any;
           const agentId = p?.agent_id ?? p?.id;
           if (agentId) {
@@ -82,10 +84,11 @@ export function useThrottledStore() {
         }
 
         switch (msg.type) {
-          case "EVIDENCE_FOUND":
+          case "EVIDENCE_FOUND": {
             const evidence = msg.payload?.evidence || msg.payload;
             if (evidence) store.addEvidence(evidence as EvidenceRecord);
             break;
+          }
           case "TIMELINE_EVENT":
             store.addTimelineEvent(msg.payload as TimelineEvent);
             break;
