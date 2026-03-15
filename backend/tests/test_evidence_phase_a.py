@@ -460,7 +460,7 @@ class TestEvidenceRouterPhaseA:
 
         fake_image = base64.b64encode(b"fakepng").decode()
 
-        with patch("evidence.router._upload_screenshot_background") as mock_bg:
+        with patch("evidence.router._upload_screenshot_background"):
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=app), base_url="http://test"
             ) as client:
