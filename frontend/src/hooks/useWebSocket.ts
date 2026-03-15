@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useMissionStore } from "../store";
+import { useThrottledDispatch } from "./useThrottledStore";
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8000";
 
 export function useWebSocket(missionId: string | null) {
   const wsRef = useRef<WebSocket | null>(null);
   const attemptsRef = useRef(0);
-  const { setConnectionStatus, setMission, updateAgent, addEvidence, addTimelineEvent, addTranscriptEntry } =
-    useMissionStore();
+  const setConnectionStatus = useMissionStore((s) => s.setConnectionStatus);
+  const enqueue = useThrottledDispatch();
 
   const connect = useCallback(() => {
     if (!missionId) return;
@@ -24,24 +25,7 @@ export function useWebSocket(missionId: string | null) {
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data as string);
-        switch (msg.type) {
-          case "MISSION_STATUS":
-            setMission(msg.payload);
-            break;
-          case "AGENT_UPDATE":
-            updateAgent(msg.payload);
-            break;
-          case "EVIDENCE_FOUND":
-            // Backend publishes the evidence dict directly as payload (not nested under .evidence)
-            addEvidence(msg.payload);
-            break;
-          case "TIMELINE_EVENT":
-            addTimelineEvent(msg.payload);
-            break;
-          case "VOICE_TRANSCRIPT":
-            addTranscriptEntry(msg.payload);
-            break;
-        }
+        enqueue(msg);
       } catch {
         // malformed message — ignore
       }
@@ -57,7 +41,7 @@ export function useWebSocket(missionId: string | null) {
       attemptsRef.current++;
       setTimeout(connect, delay);
     };
-  }, [missionId, setConnectionStatus, setMission, updateAgent, addEvidence, addTimelineEvent, addTranscriptEntry]);
+  }, [missionId, setConnectionStatus, enqueue]);
 
   useEffect(() => {
     connect();

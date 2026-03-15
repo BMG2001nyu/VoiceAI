@@ -177,6 +177,7 @@ interface MissionStore {
   timeline: TimelineEvent[];
   transcript: TranscriptEntry[];
   connectionStatus: ConnectionStatus;
+  dlqCount: number;
 
   setMission: (m: MissionRecord) => void;
   updateAgent: (update: Partial<AgentState> & { agent_id: string }) => void;
@@ -184,6 +185,7 @@ interface MissionStore {
   addTimelineEvent: (ev: TimelineEvent) => void;
   addTranscriptEntry: (entry: TranscriptEntry) => void;
   setConnectionStatus: (s: ConnectionStatus) => void;
+  setDlqCount: (n: number) => void;
 }
 
 export const useMissionStore = create<MissionStore>((set) => ({
@@ -193,6 +195,7 @@ export const useMissionStore = create<MissionStore>((set) => ({
   timeline: MOCK_TIMELINE,
   transcript: MOCK_TRANSCRIPT,
   connectionStatus: "open",
+  dlqCount: 0,
 
   setMission: (m) => set({ mission: m }),
 
@@ -222,4 +225,6 @@ export const useMissionStore = create<MissionStore>((set) => ({
     set((state) => ({ transcript: [...state.transcript, entry] })),
 
   setConnectionStatus: (s) => set({ connectionStatus: s }),
+
+  setDlqCount: (n) => set({ dlqCount: n }),
 }));

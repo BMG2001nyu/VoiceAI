@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Radio, Cpu, AlertTriangle } from "lucide-react";
 import { clsx } from "clsx";
 import { useMissionStore } from "../../store";
@@ -55,7 +56,25 @@ function MissionStatusBadge({ status }: { status: MissionStatus }) {
 }
 
 export function Header() {
-  const { mission, connectionStatus } = useMissionStore();
+  const { mission, connectionStatus, dlqCount, setDlqCount } = useMissionStore();
+
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+    const poll = async () => {
+      try {
+        const resp = await fetch(`${API_URL}/internal/dlq/count`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setDlqCount(data.count ?? 0);
+        }
+      } catch {
+        // Backend not reachable — ignore
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 10_000);
+    return () => clearInterval(interval);
+  }, [setDlqCount]);
 
   return (
     <header className="border-b border-[#1e293b] flex items-center justify-between px-6 h-12 shrink-0 relative z-10">
@@ -84,9 +103,18 @@ export function Header() {
 
       {/* Right — system status */}
       <div className="flex items-center gap-5">
-        <button className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors text-xs">
+        <button
+          className={clsx(
+            "flex items-center gap-1.5 text-xs transition-colors",
+            dlqCount > 0
+              ? "text-accent-amber hover:text-accent-amber"
+              : "text-text-secondary hover:text-text-primary"
+          )}
+        >
           <AlertTriangle size={13} />
-          <span className="font-mono">0 retries</span>
+          <span className="font-mono">
+            {dlqCount} {dlqCount === 1 ? "retry" : "retries"}
+          </span>
         </button>
 
         <div className="flex items-center gap-1.5 text-text-secondary">

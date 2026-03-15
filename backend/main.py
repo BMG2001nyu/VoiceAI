@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -11,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
+from evidence.dlq import dlq_worker
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,18 @@ async def lifespan(app: FastAPI):
     app.state.db = await asyncpg.create_pool(dsn=dsn, min_size=2, max_size=10)
     app.state.redis = aioredis.from_url(settings.redis_url, decode_responses=False)
     logger.info("DB pool and Redis connected")
+
+    # Start DLQ background worker for retrying failed evidence ingestion.
+    dlq_task = asyncio.create_task(dlq_worker(app.state.redis, app.state.db))
+
     yield
+
+    dlq_task.cancel()
+    try:
+        await dlq_task
+    except asyncio.CancelledError:
+        pass
+
     await app.state.db.close()
     await app.state.redis.aclose()
     logger.info("DB pool and Redis closed")
@@ -61,3 +74,7 @@ app.include_router(ws_relay_router)
 from gateway.voice_gateway import router as voice_router  # noqa: E402
 
 app.include_router(voice_router)
+
+from routers.internal import router as internal_router  # noqa: E402
+
+app.include_router(internal_router)
