@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from redis import asyncio as aioredis
-from ..config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

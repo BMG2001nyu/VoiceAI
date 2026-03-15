@@ -10,7 +10,7 @@ import asyncpg
 import redis.asyncio as aioredis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .gateway.ws_relay import router as relay_router
+from gateway.ws_relay import router as relay_router
 
 from config import settings
 from evidence.dlq import dlq_worker
