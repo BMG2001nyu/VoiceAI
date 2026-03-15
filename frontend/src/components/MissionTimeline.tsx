@@ -10,6 +10,7 @@ import {
 import { clsx } from "clsx";
 import { useMissionStore } from "../store";
 import type { TimelineEventType } from "../types/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 type IconProps = { size?: number; className?: string };
 
@@ -47,26 +48,31 @@ export function MissionTimeline() {
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-2 flex flex-col gap-1.5">
-        {timeline.map((event) => {
-          const config = EVENT_CONFIG[event.type];
-          return (
-            <div
-              key={event.id}
-              className="flex items-start gap-2 animate-fade-in"
-            >
-              <span className="text-[10px] font-mono text-slate-600 shrink-0 w-16 pt-px">
-                {formatTime(event.timestamp)}
-              </span>
-              <config.Icon
-                size={12}
-                className={clsx("shrink-0 mt-0.5", config.color)}
-              />
-              <span className="text-[11px] text-text-secondary leading-snug">
-                {event.description}
-              </span>
-            </div>
-          );
-        })}
+        <AnimatePresence initial={false}>
+          {timeline.map((event) => {
+            const config = EVENT_CONFIG[event.type];
+            return (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex items-start gap-2"
+              >
+                <span className="text-[10px] font-mono text-slate-600 shrink-0 w-16 pt-px">
+                  {formatTime(event.timestamp)}
+                </span>
+                <config.Icon
+                  size={12}
+                  className={clsx("shrink-0 mt-0.5", config.color)}
+                />
+                <span className="text-[11px] text-text-secondary leading-snug">
+                  {event.description}
+                </span>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );

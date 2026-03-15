@@ -11,7 +11,7 @@ import type {
 interface WSMessage {
   type: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payload: unknown;
+  payload: any;
 }
 
 const FLUSH_INTERVAL_MS = 150;
@@ -24,7 +24,7 @@ const BURST_THRESHOLD = 100;
  * store every 150ms. Collapses duplicate AGENT_UPDATE events (same agent_id)
  * and applies rate limiting during bursts.
  */
-export function useThrottledDispatch() {
+export function useThrottledStore() {
   const queueRef = useRef<WSMessage[]>([]);
   const store = useMissionStore();
 
@@ -35,7 +35,7 @@ export function useThrottledDispatch() {
         store.setMission(msg.payload as MissionRecord);
         return;
       }
-      queueRef.current = [...queueRef.current, msg];
+      queueRef.current.push(msg);
     },
     [store],
   );
@@ -46,21 +46,24 @@ export function useThrottledDispatch() {
       if (queue.length === 0) return;
 
       // Drain the queue (immutable swap)
-      const batch = queue;
+      const batch = [...queue];
       queueRef.current = [];
 
       const isBurst = batch.length > BURST_THRESHOLD;
 
       // Collapse AGENT_UPDATE: keep only latest per agent_id
-      const agentUpdates = new Map<string, unknown>();
+      const agentUpdates = new Map<string, any>();
       const otherEvents: WSMessage[] = [];
 
       for (const msg of batch) {
         if (msg.type === "AGENT_UPDATE") {
-          const p = msg.payload as Record<string, unknown>;
-          const agentId = (p?.agent_id as string | undefined) ?? (p?.id as string | undefined);
+          const p = msg.payload as any;
+          const agentId = p?.agent_id ?? p?.id;
           if (agentId) {
-            agentUpdates.set(agentId, msg.payload);
+            agentUpdates.set(agentId, {
+              ...agentUpdates.get(agentId),
+              ...msg.payload,
+            });
           }
         } else {
           otherEvents.push(msg);
@@ -80,7 +83,8 @@ export function useThrottledDispatch() {
 
         switch (msg.type) {
           case "EVIDENCE_FOUND":
-            store.addEvidence(msg.payload as EvidenceRecord);
+            const evidence = msg.payload?.evidence || msg.payload;
+            if (evidence) store.addEvidence(evidence as EvidenceRecord);
             break;
           case "TIMELINE_EVENT":
             store.addTimelineEvent(msg.payload as TimelineEvent);
@@ -95,5 +99,5 @@ export function useThrottledDispatch() {
     return () => clearInterval(interval);
   }, [store]);
 
-  return enqueue;
+  return { enqueue };
 }
