@@ -201,6 +201,9 @@ async def run_agent_task(
         backend_url: Backend API base URL.
     """
     lifecycle = AgentLifecycle(agent_id, redis, str(mission_id))
+    # The agent was already claimed (ASSIGNED) by pool.claim_agent() before
+    # this function is called. Sync the lifecycle's internal state to match.
+    lifecycle._status = "ASSIGNED"
 
     try:
         # Load agent prompt
