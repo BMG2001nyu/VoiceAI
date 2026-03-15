@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Metrics tests
@@ -81,7 +79,9 @@ class TestMetricsBuffer:
 
             import metrics
 
-            with patch.object(metrics, "_put_metric_data", new_callable=AsyncMock) as put_spy:
+            with patch.object(
+                metrics, "_put_metric_data", new_callable=AsyncMock
+            ) as put_spy:
                 for _ in range(5):
                     await metrics.emit_counter("test_metric")
                 # Below threshold (20) — should NOT have flushed.
@@ -96,7 +96,9 @@ class TestMetricsBuffer:
 
             import metrics
 
-            with patch.object(metrics, "_put_metric_data", new_callable=AsyncMock) as put_spy:
+            with patch.object(
+                metrics, "_put_metric_data", new_callable=AsyncMock
+            ) as put_spy:
                 for _ in range(20):
                     await metrics.emit_counter("test_metric")
                 put_spy.assert_called_once()
@@ -111,7 +113,9 @@ class TestMetricsBuffer:
 
             import metrics
 
-            with patch.object(metrics, "_put_metric_data", new_callable=AsyncMock) as put_spy:
+            with patch.object(
+                metrics, "_put_metric_data", new_callable=AsyncMock
+            ) as put_spy:
                 await metrics.emit_counter("a")
                 await metrics.emit_counter("b")
                 assert len(metrics._buffer) == 2

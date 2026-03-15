@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import time
 from datetime import datetime, timezone
@@ -12,8 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from orchestrator.context_packet import build_context_packet, _elapsed_seconds
-from orchestrator.planning_loop import run_planning_loop, PLANNING_CYCLE_INTERVAL_SEC
-
+from orchestrator.planning_loop import run_planning_loop
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

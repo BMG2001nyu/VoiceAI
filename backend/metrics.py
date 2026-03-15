@@ -11,7 +11,6 @@ A background buffer batches ``PutMetricData`` calls — flushing every
 from __future__ import annotations
 
 import asyncio
-import time
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
