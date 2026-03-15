@@ -11,13 +11,11 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any
 
 import asyncpg
 from redis.asyncio import Redis
 
 from agents.command_channel import dispatch_commands
-from agents.pool import get_pool_summary
 from config import settings
 from missions.repository import get_mission, update_mission_status
 from orchestrator.assignment import assign_tasks
@@ -25,7 +23,7 @@ from orchestrator.context_packet import build_context_packet
 from orchestrator.reallocation import detect_reallocation_opportunities
 from orchestrator.stopping import should_stop
 from orchestrator.task_graph import TaskNode, get_available_tasks
-from streaming.channels import publish, publish_timeline_event
+from streaming.channels import publish_timeline_event
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +95,7 @@ async def run_planning_loop(
                     continue
 
                 # ── 2. Build context packet ─────────────────────────────
-                context = await build_context_packet(
-                    mission_id, db, redis, pool_size
-                )
+                context = await build_context_packet(mission_id, db, redis, pool_size)
 
                 if context.get("error"):
                     logger.warning(
@@ -112,9 +108,7 @@ async def run_planning_loop(
                 elapsed_sec = context.get("elapsed_sec", 0.0)
 
                 # ── 3. Check stopping criteria ──────────────────────────
-                stop, reason = await should_stop(
-                    mission_id, elapsed_sec, db
-                )
+                stop, reason = await should_stop(mission_id, elapsed_sec, db)
 
                 if stop:
                     logger.info(
@@ -159,9 +153,7 @@ async def run_planning_loop(
 
                 # ── 6. Dispatch commands ────────────────────────────────
                 if assignments:
-                    dispatched = await dispatch_commands(
-                        assignments, redis, mission_id
-                    )
+                    dispatched = await dispatch_commands(assignments, redis, mission_id)
                     actions_taken.append(f"ASSIGNED {dispatched} agents")
 
                     # ── 7. Publish timeline events ──────────────────────
@@ -196,9 +188,7 @@ async def run_planning_loop(
     except asyncio.CancelledError:
         logger.info("Planning loop cancelled for mission %s", mission_id)
 
-    logger.info(
-        "Planning loop ended for mission %s after %d cycles", mission_id, cycle
-    )
+    logger.info("Planning loop ended for mission %s after %d cycles", mission_id, cycle)
 
 
 # ── Lifecycle helpers ────────────────────────────────────────────────────────
