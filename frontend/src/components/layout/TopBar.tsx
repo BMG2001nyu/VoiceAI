@@ -1,13 +1,30 @@
 import React from "react";
-import { Cpu, Pause, RotateCcw, Share2, Settings, User } from "lucide-react";
+import { Cpu, Pause, Play, RotateCcw, Share2, Settings, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Mission } from "@/types/mission";
+import { toast } from "@/hooks/useToast";
 
 interface TopBarProps {
     mission: Mission;
+    isPaused: boolean;
+    onPause: () => void;
+    onReset: () => void;
 }
 
-export function TopBar({ mission }: TopBarProps) {
+export function TopBar({ mission, isPaused, onPause, onReset }: TopBarProps) {
+    const handleShare = () => {
+        const url = `${window.location.origin}/mission/${mission.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            toast.success("Mission URL copied to clipboard");
+        }).catch(() => {
+            toast.error("Failed to copy URL");
+        });
+    };
+
+    const handleSettings = () => {
+        toast.show("Settings coming soon", "info");
+    };
+
     return (
         <header className="fixed top-0 left-0 right-0 h-14 border-b border-border bg-background/80 backdrop-blur-md z-50 flex items-center justify-between px-4">
             {/* Left: Brand & Status */}
@@ -24,14 +41,18 @@ export function TopBar({ mission }: TopBarProps) {
                 <div className="flex items-center gap-2">
                     <div className={cn(
                         "px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase",
-                        mission.status === "ACTIVE" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                        isPaused
+                            ? "bg-yellow-500/10 text-yellow-500"
+                            : mission.status === "ACTIVE" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                     )}>
-                        {mission.status}
+                        {isPaused ? "PAUSED" : mission.status}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">LIVE</span>
-                    </div>
+                    {!isPaused && (
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">LIVE</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -48,18 +69,34 @@ export function TopBar({ mission }: TopBarProps) {
             {/* Right: Controls */}
             <div className="flex items-center gap-2">
                 <div className="flex items-center bg-muted/50 rounded-lg p-0.5 border border-border">
-                    <button className="p-1.5 rounded-md hover:bg-background text-muted-foreground transition-all">
-                        <Pause size={14} />
+                    <button
+                        onClick={onPause}
+                        className="p-1.5 rounded-md hover:bg-background text-muted-foreground transition-all"
+                        title={isPaused ? "Resume mission" : "Pause mission"}
+                    >
+                        {isPaused ? <Play size={14} /> : <Pause size={14} />}
                     </button>
-                    <button className="p-1.5 rounded-md hover:bg-background text-muted-foreground transition-all">
+                    <button
+                        onClick={onReset}
+                        className="p-1.5 rounded-md hover:bg-background text-muted-foreground transition-all"
+                        title="Reset mission"
+                    >
                         <RotateCcw size={14} />
                     </button>
                 </div>
 
-                <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
+                <button
+                    onClick={handleShare}
+                    className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+                    title="Share mission"
+                >
                     <Share2 size={16} />
                 </button>
-                <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
+                <button
+                    onClick={handleSettings}
+                    className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+                    title="Settings"
+                >
                     <Settings size={16} />
                 </button>
 

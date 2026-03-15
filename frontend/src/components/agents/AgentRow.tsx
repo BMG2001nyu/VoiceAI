@@ -8,9 +8,11 @@ import { useFocusStore } from "@/store/focusStore";
 
 interface AgentRowProps {
     agent: Agent;
+    onStop: (agentId: string) => void;
+    onReassign: (agentId: string) => void;
 }
 
-export function AgentRow({ agent }: AgentRowProps) {
+export function AgentRow({ agent, onStop, onReassign }: AgentRowProps) {
     const [isOpen, setIsOpen] = useState(false);
     const isPulsing = usePulseOnUpdate(agent.lastUpdate);
     const openFocus = useFocusStore((s) => s.openFocus);
@@ -122,10 +124,16 @@ export function AgentRow({ agent }: AgentRowProps) {
 
                 {/* Actions */}
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                    <button className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-secondary text-[10px] font-bold hover:bg-muted transition-colors">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onStop(agent.id); }}
+                        className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-secondary text-[10px] font-bold hover:bg-muted transition-colors"
+                    >
                         <Power size={11} /> STOP
                     </button>
-                    <button className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-secondary text-[10px] font-bold hover:bg-muted transition-colors">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onReassign(agent.id); }}
+                        className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-secondary text-[10px] font-bold hover:bg-muted transition-colors"
+                    >
                         <RefreshCcw size={11} /> {agent.status === "FAILED" ? "RETRY" : "REASSIGN"}
                     </button>
                 </div>

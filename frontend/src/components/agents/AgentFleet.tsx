@@ -6,14 +6,21 @@ import { AgentRow } from "./AgentRow";
 
 interface AgentFleetProps {
     agents: Agent[];
+    onStop: (agentId: string) => void;
+    onReassign: (agentId: string) => void;
 }
 
-export function AgentFleet({ agents }: AgentFleetProps) {
+export function AgentFleet({ agents, onStop, onReassign }: AgentFleetProps) {
     const [filter, setFilter] = useState<AgentStatus | "ALL">("ALL");
+    const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredAgents = filter === "ALL"
-        ? agents
-        : agents.filter(a => a.status === filter);
+    const filteredAgents = agents
+        .filter(a => filter === "ALL" || a.status === filter)
+        .filter(a => {
+            if (searchQuery.trim().length === 0) return true;
+            const q = searchQuery.toLowerCase();
+            return a.name.toLowerCase().includes(q) || a.task.toLowerCase().includes(q) || a.id.toLowerCase().includes(q);
+        });
 
     const activeCount = agents.filter(a => a.status === "ACTIVE").length;
 
@@ -37,6 +44,8 @@ export function AgentFleet({ agents }: AgentFleetProps) {
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={12} />
                     <input
                         type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search agents..."
                         className="w-full bg-muted/30 border border-border rounded-lg py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all font-mono"
                     />
@@ -64,7 +73,7 @@ export function AgentFleet({ agents }: AgentFleetProps) {
             {/* Agent Cards List */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 scrollbar-thin">
                 {filteredAgents.map((agent) => (
-                    <AgentRow key={agent.id} agent={agent} />
+                    <AgentRow key={agent.id} agent={agent} onStop={onStop} onReassign={onReassign} />
                 ))}
                 {filteredAgents.length === 0 && (
                     <div className="p-8 text-center opacity-40">

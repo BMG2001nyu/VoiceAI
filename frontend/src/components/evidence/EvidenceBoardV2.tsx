@@ -3,6 +3,7 @@ import { Search, Info, LayoutGrid, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Evidence } from "@/types/mission";
 import { EvidenceCardV2 } from "./EvidenceCardV2";
+import { toast } from "@/hooks/useToast";
 
 interface EvidenceBoardProps {
     evidence: Evidence[];
@@ -12,15 +13,25 @@ export function EvidenceBoardV2({ evidence }: EvidenceBoardProps) {
     const [activeTab, setActiveTab] = useState<string>("ALL");
     const [viewMode, setViewMode] = useState<"GRID" | "LIST">("LIST");
     const [sortBy, setSortBy] = useState<"NEWEST" | "CONFIDENCE">("NEWEST");
+    const [searchQuery, setSearchQuery] = useState("");
 
     const tags = ["ALL", ...Array.from(new Set(evidence.flatMap(e => e.tags)))];
 
     const filteredEvidence = evidence
         .filter(e => activeTab === "ALL" || e.tags.includes(activeTab))
+        .filter(e => {
+            if (searchQuery.trim().length === 0) return true;
+            const q = searchQuery.toLowerCase();
+            return e.title.toLowerCase().includes(q) || e.summary.toLowerCase().includes(q);
+        })
         .sort((a, b) => {
             if (sortBy === "CONFIDENCE") return b.confidence - a.confidence;
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
+
+    const handleSynthesize = () => {
+        toast.success("Synthesizing intelligence from " + filteredEvidence.length + " findings...");
+    };
 
     return (
         <div className="flex-1 flex flex-col min-h-0">
@@ -54,6 +65,8 @@ export function EvidenceBoardV2({ evidence }: EvidenceBoardProps) {
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={12} />
                         <input
                             type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search evidence..."
                             className="w-full bg-muted/30 border border-border rounded-lg py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all font-mono"
                         />
@@ -102,7 +115,10 @@ export function EvidenceBoardV2({ evidence }: EvidenceBoardProps) {
 
             {/* Synthesis Trigger */}
             <div className="p-4 border-t border-border bg-card/20">
-                <button className="w-full py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                <button
+                    onClick={handleSynthesize}
+                    className="w-full py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                >
                     <span>SYNTHESIZE INTELLIGENCE</span>
                 </button>
             </div>
