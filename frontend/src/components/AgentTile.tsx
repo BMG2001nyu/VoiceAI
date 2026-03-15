@@ -2,6 +2,7 @@ import { Globe, Bot } from "lucide-react";
 import { clsx } from "clsx";
 import { StatusBadge } from "./StatusBadge";
 import type { AgentState, AgentType } from "../types/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 const AGENT_TYPE_LABELS: Record<AgentType, string> = {
   OFFICIAL_SITE: "Official Site",
@@ -20,7 +21,8 @@ export function AgentTile({ agent }: AgentTileProps) {
   const isActive = agent.status === "BROWSING" || agent.status === "REPORTING";
 
   return (
-    <div
+    <motion.div
+      layout
       className={clsx(
         "rounded-lg p-3 flex flex-col gap-2 border transition-colors duration-300",
         "bg-surface",
@@ -31,6 +33,15 @@ export function AgentTile({ agent }: AgentTileProps) {
           "border-[#1e293b]": agent.status === "IDLE",
         }
       )}
+      animate={{
+        scale: isActive ? 1.02 : 1,
+        borderColor:
+          agent.status === "BROWSING" ? "rgba(59, 130, 246, 0.4)" :
+            agent.status === "REPORTING" ? "rgba(34, 197, 94, 0.4)" :
+              agent.status === "ASSIGNED" ? "rgba(245, 158, 11, 0.4)" :
+                "#1e293b"
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
       {/* Top row */}
       <div className="flex items-center justify-between gap-2">
@@ -81,22 +92,27 @@ export function AgentTile({ agent }: AgentTileProps) {
       </div>
 
       {/* Scanning placeholder when active */}
-      {isActive && !agent.screenshot_url && (
-        <div className="h-16 rounded bg-slate-900 border border-[#1e293b] overflow-hidden relative">
-          <div
-            className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-accent-blue to-transparent opacity-60"
-            style={{
-              animation: "scanLine 2s linear infinite",
-              top: "50%",
-            }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] text-slate-700 font-mono">
-              scanning…
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {isActive && !agent.screenshot_url && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 64 }}
+            exit={{ opacity: 0, height: 0 }}
+            className="rounded bg-slate-900 border border-[#1e293b] overflow-hidden relative"
+          >
+            <motion.div
+              className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-accent-blue to-transparent opacity-60"
+              animate={{ top: ["0%", "100%", "0%"] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[10px] text-slate-700 font-mono">
+                scanning…
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

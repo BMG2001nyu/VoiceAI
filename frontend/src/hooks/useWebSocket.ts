@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useMissionStore } from "../store";
-import { useThrottledDispatch } from "./useThrottledStore";
+import { useThrottledStore } from "./useThrottledStore";
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8000";
 
 export function useWebSocket(missionId: string | null) {
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsMissionRef = useRef<WebSocket | null>(null);
+  const wsVoiceRef = useRef<WebSocket | null>(null);
   const attemptsRef = useRef(0);
   const connectionStatusRef = useRef<string>("closed");
-  const setConnectionStatus = useMissionStore((s) => s.setConnectionStatus);
-  const enqueue = useThrottledDispatch();
+  const { setConnectionStatus } = useMissionStore();
+  const { enqueue } = useThrottledStore();
 
-  const connect = useCallback(() => {
+  const connectMission = useCallback(() => {
     if (!missionId) return;
 
     if (connectionStatusRef.current !== "connecting") {
@@ -20,7 +21,7 @@ export function useWebSocket(missionId: string | null) {
     }
 
     const ws = new WebSocket(`${WS_URL}/ws/mission/${missionId}`);
-    wsRef.current = ws;
+    wsMissionRef.current = ws;
 
     ws.onopen = () => {
       attemptsRef.current = 0;
@@ -34,8 +35,8 @@ export function useWebSocket(missionId: string | null) {
       try {
         const msg = JSON.parse(e.data as string);
         enqueue(msg);
-      } catch {
-        // malformed message — ignore
+      } catch (err) {
+        console.error("Failed to parse mission message:", err);
       }
     };
 
@@ -55,14 +56,43 @@ export function useWebSocket(missionId: string | null) {
         Math.min(1000 * 2 ** attemptsRef.current, 30_000) +
         Math.random() * 500;
       attemptsRef.current++;
-      setTimeout(connect, delay);
+      setTimeout(connectMission, delay);
     };
   }, [missionId, setConnectionStatus, enqueue]);
 
-  useEffect(() => {
-    connect();
-    return () => {
-      wsRef.current?.close();
+  const connectVoice = useCallback(() => {
+    const ws = new WebSocket(`${WS_URL}/ws/voice`);
+    wsVoiceRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "start" }));
     };
-  }, [connect]);
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data as string);
+        enqueue(msg);
+      } catch (err) {
+        console.error("Failed to parse voice message:", err);
+      }
+    };
+
+    ws.onclose = () => {
+      // Reconnect voice after 2s if it drops
+      setTimeout(connectVoice, 2000);
+    };
+  }, [enqueue]);
+
+  useEffect(() => {
+    connectMission();
+    connectVoice();
+
+    return () => {
+      wsMissionRef.current?.close();
+      if (wsVoiceRef.current?.readyState === WebSocket.OPEN) {
+        wsVoiceRef.current.send(JSON.stringify({ type: "stop" }));
+      }
+      wsVoiceRef.current?.close();
+    };
+  }, [connectMission, connectVoice]);
 }

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMissionStore } from "../store";
 import { EvidenceCard } from "./EvidenceCard";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export function EvidenceBoard() {
   const evidence = useMissionStore((s) => s.evidence);
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
 
   const themes = Array.from(
     new Set(evidence.map((e) => e.theme).filter(Boolean) as string[])
@@ -13,6 +15,13 @@ export function EvidenceBoard() {
   const filtered = activeTheme
     ? evidence.filter((e) => e.theme === activeTheme)
     : evidence;
+
+  const virtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 160,
+    overscan: 5,
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -31,11 +40,10 @@ export function EvidenceBoard() {
         <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#1e293b] shrink-0 flex-wrap">
           <button
             onClick={() => setActiveTheme(null)}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-mono border transition-colors ${
-              activeTheme === null
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono border transition-colors ${activeTheme === null
                 ? "bg-slate-700 text-white border-slate-600"
                 : "text-slate-500 border-slate-800 hover:border-slate-600"
-            }`}
+              }`}
           >
             All
           </button>
@@ -43,11 +51,10 @@ export function EvidenceBoard() {
             <button
               key={t}
               onClick={() => setActiveTheme(t === activeTheme ? null : t)}
-              className={`px-2 py-0.5 rounded-full text-[10px] font-mono border transition-colors ${
-                activeTheme === t
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono border transition-colors ${activeTheme === t
                   ? "bg-blue-900/60 text-accent-blue border-accent-blue/40"
                   : "text-slate-500 border-slate-800 hover:border-slate-600"
-              }`}
+                }`}
             >
               {t}
             </button>
@@ -55,15 +62,41 @@ export function EvidenceBoard() {
         </div>
       )}
 
-      {/* Cards */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-3 flex flex-col gap-2.5">
+      {/* Cards with Virtualization */}
+      <div
+        ref={parentRef}
+        className="flex-1 overflow-y-auto scrollbar-thin p-3"
+      >
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-text-secondary text-xs font-mono gap-2 opacity-40">
             <span>No findings yet</span>
             <span className="text-[10px]">Agents are gathering intelligence…</span>
           </div>
         ) : (
-          filtered.map((ev) => <EvidenceCard key={ev.id} evidence={ev} />)
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => (
+              <div
+                key={virtualItem.key}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: `${virtualItem.size}px`,
+                  transform: `translateY(${virtualItem.start}px)`,
+                  paddingBottom: "10px",
+                }}
+              >
+                <EvidenceCard evidence={filtered[virtualItem.index]} />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

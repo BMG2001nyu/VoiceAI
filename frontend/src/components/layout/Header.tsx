@@ -1,6 +1,6 @@
-import { useEffect } from "react";
 import { Radio, Cpu, AlertTriangle } from "lucide-react";
 import { clsx } from "clsx";
+import { useEffect } from "react";
 import { useMissionStore } from "../../store";
 import type { ConnectionStatus, MissionStatus } from "../../types/api";
 
@@ -105,9 +105,9 @@ export function Header() {
       <div className="flex items-center gap-5">
         <button
           className={clsx(
-            "flex items-center gap-1.5 text-xs transition-colors",
+            "flex items-center gap-1.5 transition-colors text-xs",
             dlqCount > 0
-              ? "text-accent-amber hover:text-accent-amber"
+              ? "text-accent-amber animate-pulse hover:text-accent-amber"
               : "text-text-secondary hover:text-text-primary"
           )}
         >
