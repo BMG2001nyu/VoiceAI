@@ -330,7 +330,7 @@ cd frontend
 npm run dev
 ```
 
-Visit [http://localhost:5173](http://localhost:5173) — the War Room UI loads immediately with mock demo data. No backend required to see the full UI. The backend WebSocket endpoints are now live — `/ws/voice` (Voice Gateway) and `/ws/mission/{id}` (WS relay) — so with Docker Compose up and the backend running, the `useWebSocket` hook will connect automatically and replace mock data with live events. **Next step (Sariya):** swap the hardcoded mock `missionId` in `store/index.ts` for a real UUID from `POST /missions`.
+Visit [http://localhost:5173](http://localhost:5173) — the War Room UI loads immediately with mock demo data. No backend required to see the full UI. The backend WebSocket endpoints are now live — `/ws/voice` (Voice Gateway) and `/ws/mission/{id}` (WS relay) — so with Docker Compose up and the backend running, the `useWebSocket` hook will connect automatically and replace mock data with live events. The War Room UI is fully connected to the live backend with real mission UUIDs from `POST /missions`.
 
 ---
 
@@ -345,23 +345,23 @@ If you do not have AWS credentials yet, or want to test UI and backend integrati
 DEMO_MODE=true
 ```
 
-With `DEMO_MODE=true` (once backend demo is implemented):
+With `DEMO_MODE=true`:
 - Nova Sonic is stubbed with canned responses
 - Browser agents emit mock evidence from `demo/mock_evidence.json`
 - No real Bedrock calls are made
 - Redis and Postgres are still required (Docker Compose handles these)
 
-Start a demo mission (once `demo/` scripts exist):
+Start a demo mission:
 
 ```bash
 python demo/seed_sequoia.py
 ```
 
-**Right now**, the fastest way to see a working demo is:
+For a quick frontend-only demo without Docker:
 
 ```bash
 cd frontend && npm run dev
-# Open http://localhost:5173 — full war room with live mock data
+# Open http://localhost:5173 — full war room with seeded mock data
 ```
 
 ---
