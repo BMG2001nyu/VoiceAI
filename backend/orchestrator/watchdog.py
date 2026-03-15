@@ -35,7 +35,9 @@ async def watchdog(
         db: asyncpg connection pool.
         pool_size: Number of agents to monitor.
     """
-    logger.info("Watchdog started (interval=%ds, pool_size=%d)", WATCHDOG_INTERVAL_S, pool_size)
+    logger.info(
+        "Watchdog started (interval=%ds, pool_size=%d)", WATCHDOG_INTERVAL_S, pool_size
+    )
 
     try:
         while True:
@@ -81,14 +83,28 @@ async def _check_agent(redis: Any, db: Any, agent_id: str) -> None:
         return  # Heartbeat is alive — agent is fine
 
     # Heartbeat expired — reclaim the agent
-    logger.warning("Agent %s heartbeat expired (status=%s) — reclaiming", agent_id, status)
+    logger.warning(
+        "Agent %s heartbeat expired (status=%s) — reclaiming", agent_id, status
+    )
 
     # Get task info before resetting
     task_id_raw = await redis.hget(key, "task_id")
     mission_id_raw = await redis.hget(key, "mission_id")
 
-    task_id = (task_id_raw.decode() if isinstance(task_id_raw, bytes) else task_id_raw) if task_id_raw else None
-    mission_id = (mission_id_raw.decode() if isinstance(mission_id_raw, bytes) else mission_id_raw) if mission_id_raw else None
+    task_id = (
+        (task_id_raw.decode() if isinstance(task_id_raw, bytes) else task_id_raw)
+        if task_id_raw
+        else None
+    )
+    mission_id = (
+        (
+            mission_id_raw.decode()
+            if isinstance(mission_id_raw, bytes)
+            else mission_id_raw
+        )
+        if mission_id_raw
+        else None
+    )
 
     # Reset agent to IDLE
     await release_agent(redis, agent_id)
@@ -108,6 +124,7 @@ async def _check_agent(redis: Any, db: Any, agent_id: str) -> None:
     if mission_id:
         try:
             from streaming.channels import publish_timeline_event
+
             await publish_timeline_event(
                 redis,
                 mission_id,

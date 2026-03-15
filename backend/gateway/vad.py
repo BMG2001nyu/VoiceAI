@@ -20,7 +20,9 @@ FRAME_DURATION_MS = 20
 # Sample rate expected from browser mic
 BROWSER_SAMPLE_RATE = 16_000
 SAMPLE_WIDTH = 2  # 16-bit PCM
-FRAME_SIZE = (BROWSER_SAMPLE_RATE * FRAME_DURATION_MS // 1000) * SAMPLE_WIDTH  # 640 bytes
+FRAME_SIZE = (
+    BROWSER_SAMPLE_RATE * FRAME_DURATION_MS // 1000
+) * SAMPLE_WIDTH  # 640 bytes
 
 # Silence threshold: consecutive silent frames before declaring end-of-utterance
 SILENCE_THRESHOLD_FRAMES = 15  # 300 ms at 20 ms/frame

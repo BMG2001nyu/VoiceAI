@@ -29,6 +29,7 @@ _TYPE_PREFERENCES: dict[str, list[int]] = {
 @dataclass
 class AssignAction:
     """A single agent-to-task assignment."""
+
     agent_id: str
     task_id: str
     objective: str
@@ -98,7 +99,10 @@ async def assign_tasks(
 
         logger.info(
             "Assigned %s → %s (type=%s, priority=%d)",
-            agent_id, task.id[:8], task.agent_type, task.priority,
+            agent_id,
+            task.id[:8],
+            task.agent_type,
+            task.priority,
         )
 
     return actions

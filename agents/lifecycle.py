@@ -104,6 +104,7 @@ class AgentLifecycle:
 
         # Update Redis agent state
         from agents.pool import agent_key
+
         mapping: dict[str, str] = {
             "status": new_status,
             "last_heartbeat": str(time.time()),
@@ -119,7 +120,12 @@ class AgentLifecycle:
         if new_status == "IDLE":
             await self._redis.hset(
                 agent_key(self.agent_id),
-                mapping={"task_id": "", "mission_id": "", "agent_type": "", "session_id": ""},
+                mapping={
+                    "task_id": "",
+                    "mission_id": "",
+                    "agent_type": "",
+                    "session_id": "",
+                },
             )
             self._task_id = None
 
@@ -128,7 +134,10 @@ class AgentLifecycle:
 
         logger.info(
             "Agent %s: %s -> %s (task=%s)",
-            self.agent_id, old_status, new_status, self._task_id,
+            self.agent_id,
+            old_status,
+            new_status,
+            self._task_id,
         )
 
     async def _publish_agent_update(self, site_url: str | None = None) -> None:
@@ -145,7 +154,9 @@ class AgentLifecycle:
             }
             await publish_agent_update(self._redis, self._mission_id, agent_state)
         except Exception as exc:
-            logger.warning("Failed to publish AGENT_UPDATE for %s: %s", self.agent_id, exc)
+            logger.warning(
+                "Failed to publish AGENT_UPDATE for %s: %s", self.agent_id, exc
+            )
 
     # -- Heartbeat -------------------------------------------------------------
 
@@ -209,6 +220,7 @@ async def run_agent_task(
         # Load agent prompt
         try:
             from agents.prompts import load_prompt
+
             agent_prompt = load_prompt(agent_type)
         except FileNotFoundError:
             logger.warning("No prompt for agent type %s, using default", agent_type)
@@ -219,6 +231,7 @@ async def run_agent_task(
 
         # Run browser task
         from agents.browser_session import run_browser_task
+
         result = await run_browser_task(objective, agent_prompt, constraints)
 
         # BROWSING -> REPORTING
@@ -226,6 +239,7 @@ async def run_agent_task(
 
         # Emit evidence
         from agents.evidence_emitter import emit_findings
+
         await emit_findings(result, mission_id, agent_id, task_id, backend_url)
 
         # Emit TASK_COMPLETE signal
@@ -248,4 +262,5 @@ async def run_agent_task(
         except Exception:
             # Last resort: directly set IDLE in Redis
             from agents.pool import release_agent
+
             await release_agent(redis, agent_id)

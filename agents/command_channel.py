@@ -10,10 +10,8 @@ simultaneously using asyncio.TaskGroup.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import Any
-from uuid import UUID
 
 from agents.schemas import AgentCommand, CommandType
 
@@ -37,7 +35,9 @@ async def send_command(command: AgentCommand, redis: Any) -> None:
     await redis.lpush(key, payload)
     logger.info(
         "Sent %s command to %s (task=%s)",
-        command.command_type, command.agent_id, command.task_id,
+        command.command_type,
+        command.agent_id,
+        command.task_id,
     )
 
 
@@ -93,15 +93,15 @@ async def command_listener(
 
             logger.info(
                 "Agent %s received %s command (task=%s)",
-                agent_id, command.command_type, command.task_id,
+                agent_id,
+                command.command_type,
+                command.task_id,
             )
 
             try:
                 await handler(command)
             except Exception as exc:
-                logger.error(
-                    "Agent %s: command handler error: %s", agent_id, exc
-                )
+                logger.error("Agent %s: command handler error: %s", agent_id, exc)
     except asyncio.CancelledError:
         logger.info("Command listener stopped for %s", agent_id)
 
@@ -120,6 +120,7 @@ async def handle_command(
     """
     if command.command_type == CommandType.ASSIGN:
         from agents.lifecycle import run_agent_task
+
         await run_agent_task(
             agent_id=command.agent_id,
             redis=redis,
@@ -134,9 +135,11 @@ async def handle_command(
     elif command.command_type == CommandType.REDIRECT:
         # Cancel current task and start new one
         from agents.pool import update_agent_status
+
         await update_agent_status(redis, command.agent_id, "ASSIGNED")
 
         from agents.lifecycle import run_agent_task
+
         await run_agent_task(
             agent_id=command.agent_id,
             redis=redis,
@@ -150,6 +153,7 @@ async def handle_command(
 
     elif command.command_type == CommandType.STOP:
         from agents.pool import release_agent
+
         await release_agent(redis, command.agent_id)
         logger.info("Agent %s stopped and released", command.agent_id)
 
@@ -191,14 +195,17 @@ async def dispatch_commands(
                 agent_type=action.agent_type,
                 constraints=action.constraints,
             )
-            tg.create_task(_dispatch_one(command, redis, action.agent_id, action.task_id))
+            tg.create_task(
+                _dispatch_one(command, redis, action.agent_id, action.task_id)
+            )
 
     # If we get here, all tasks completed (TaskGroup propagates exceptions)
     dispatched = len(actions)
 
     logger.info(
         "Dispatched %d commands for mission %s",
-        dispatched, mission_id[:8] if mission_id else "?",
+        dispatched,
+        mission_id[:8] if mission_id else "?",
     )
     return dispatched
 

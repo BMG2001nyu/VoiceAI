@@ -6,25 +6,47 @@ import logging
 from typing import Optional
 
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from redis.asyncio import Redis
 
 from deps import get_db, get_redis
-from evidence.schemas import EvidenceIngest, EvidenceResponse
 from evidence import repository
+from evidence.schemas import EvidenceIngest, EvidenceResponse
+from evidence.scoring import compute_confidence
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["evidence"])
 
 
+async def _upload_screenshot_background(
+    evidence_id: str,
+    mission_id: str,
+    base64_data: str,
+    db: asyncpg.Pool,
+) -> None:
+    """Background task: decode + upload screenshot to S3, update DB."""
+    try:
+        from evidence.screenshot import upload_screenshot
+
+        s3_key = await upload_screenshot(evidence_id, mission_id, base64_data)
+        await repository.update_screenshot_key(db, evidence_id, s3_key)
+        logger.info("Screenshot uploaded for evidence %s → %s", evidence_id, s3_key)
+    except Exception as exc:
+        logger.error("Screenshot upload failed for evidence %s: %s", evidence_id, exc)
+
+
 @router.post("/evidence", response_model=EvidenceResponse, status_code=201)
 async def ingest_evidence(
     body: EvidenceIngest,
+    background_tasks: BackgroundTasks,
     db: asyncpg.Pool = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ) -> EvidenceResponse:
     """Ingest a new evidence item; publishes EVIDENCE_FOUND to Redis pub/sub."""
+    # Compute confidence from source heuristics (synchronous, fast)
+    confidence = compute_confidence(body.source_url, body.snippet)
+
     try:
         row = await repository.insert_evidence(
             db,
@@ -34,7 +56,7 @@ async def ingest_evidence(
             summary=body.summary,
             source_url=body.source_url,
             snippet=body.snippet,
-            confidence=body.confidence,
+            confidence=confidence,
             novelty=body.novelty,
             theme=body.theme,
             screenshot_s3_key=body.screenshot_s3_key,
@@ -43,6 +65,16 @@ async def ingest_evidence(
         raise HTTPException(
             status_code=422,
             detail="mission_id references a mission that does not exist",
+        )
+
+    # Kick off screenshot upload as a background task (non-blocking)
+    if body.screenshot_base64:
+        background_tasks.add_task(
+            _upload_screenshot_background,
+            row["id"],
+            body.mission_id,
+            body.screenshot_base64,
+            db,
         )
 
     # Publish to Redis so the WS relay forwards it to all War Room browsers.
@@ -74,4 +106,18 @@ async def list_evidence(
     rows = await repository.list_evidence(
         db, mission_id, theme=theme, limit=limit, offset=offset
     )
-    return [EvidenceResponse(**r) for r in rows]
+
+    # Generate presigned screenshot URLs on-the-fly
+    results = []
+    for r in rows:
+        resp = EvidenceResponse(**r)
+        if r.get("screenshot_s3_key"):
+            try:
+                from evidence.screenshot import get_screenshot_url
+
+                resp.screenshot_url = get_screenshot_url(r["screenshot_s3_key"])
+            except Exception as exc:
+                logger.warning("Could not generate screenshot URL: %s", exc)
+        results.append(resp)
+
+    return results

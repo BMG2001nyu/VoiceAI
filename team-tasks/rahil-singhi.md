@@ -9,15 +9,15 @@
 
 ## Implementation Status
 
-**Last updated:** March 2026 — Session 6
+**Last updated:** March 2026 — Session 7
 
 | Task | Status | Notes |
 |------|--------|-------|
 | 6.1 Evidence Schema + Ingest API | ✅ Done | `backend/evidence/` — schemas, repository, router; `POST /evidence` verified live |
-| 6.2 Screenshot S3 Upload | ⏳ Pending | Depends on 6.1 ✅ and S3 bucket (local MinIO ✅ via Docker Compose) |
-| 6.3 Confidence + Novelty Scoring | ⏳ Pending | Depends on 6.1 ✅; novelty needs Phase 7.2 |
-| 6.4 Evidence List API | ✅ Done | `GET /missions/{id}/evidence` with theme filter + pagination — verified live |
-| 7.1 Embedding Client | ⏳ Pending | Coordinate with Manav on dimension before he creates OpenSearch index (2.5) |
+| 6.2 Screenshot S3 Upload | ✅ Done | `backend/evidence/screenshot.py` — base64 decode + S3/MinIO upload, presigned URLs, background task wired |
+| 6.3 Confidence + Novelty Scoring | ✅ Done | `backend/evidence/scoring.py` — domain-based confidence heuristic wired into router; novelty stubbed to 1.0 until Phase 7.2 |
+| 6.4 Evidence List API | ✅ Done | `GET /missions/{id}/evidence` with theme filter + pagination + presigned screenshot URLs |
+| 7.1 Embedding Client | ✅ Done | `backend/models/embedding_client.py` — Bedrock Titan Embed Image v1, 1024 dim, multimodal (text+image), L2 normalized, smoke-tested live. **EMBEDDING_DIMENSION=1024 — share with Manav for OpenSearch index (Task 2.5)** |
 | 7.2 Embedding Pipeline | ⏳ Pending | Depends on 7.1, 6.1 ✅, Manav's OpenSearch (2.5) |
 | 7.3 Semantic Clustering | ⏳ Pending | Depends on 7.2 |
 | 7.4 Theme Classification | ⏳ Pending | Depends on 7.3; `backend/models/lite_client.py` ✅ ready |
@@ -36,9 +36,11 @@
 
 The TypeScript types for your evidence schema are already defined in `frontend/src/types/api.ts` — field names are already in sync with Sariya's UI.
 
-**Your critical path now:** 7.1 (embedding client) → tell Manav the `EMBEDDING_DIMENSION` constant → he creates the OpenSearch index (Task 2.5) → then 7.2 (embedding pipeline) can run. Start 7.1 immediately — no dependencies.
+**Session 7 delivered:** Tasks 6.2 (screenshot upload), 6.3 (confidence scoring), and 7.1 (embedding client) are complete. 56 new tests added (99 total backend tests). Bedrock bearer token verified with $100 free credits. Embedding model: `amazon.titan-embed-image-v1` (multimodal, 1024 dim).
 
-**Share with Manav early:** `EMBEDDING_DIMENSION` from `backend/models/embedding_client.py` — he needs it before provisioning OpenSearch (Task 2.5).
+**Your critical path now:** 7.2 (embedding pipeline) → needs local OpenSearch stub (Manav hasn't started 2.5 yet) → 7.3 (clustering) → 7.4 (themes) → 12.1-12.3 (synthesis). Tasks 10.4, 10.5, 11.4 blocked on Manav's orchestrator (4.3, 4.5) and Chinmay's agent lifecycle (5.5).
+
+**Share with Manav:** `EMBEDDING_DIMENSION = 1024` from `backend/models/embedding_client.py` — he needs it before provisioning OpenSearch (Task 2.5). Model: `amazon.titan-embed-image-v1`. Auth: Bedrock bearer token (not IAM SigV4).
 
 **Share with Chinmay:** The `POST /internal/deliver-briefing` contract (Task 12.3) — he builds against this in his voice gateway (Task 3.3 ✅ already done, awaiting this endpoint).
 
@@ -55,10 +57,10 @@ Your MarketPulse-AI project is essentially a proof of concept for everything Mis
 | Task | Phase | Description | Depends On | Status |
 |------|-------|-------------|------------|--------|
 | 6.1 | Evidence | Evidence schema, storage, ingest API | 2.3 ✅ (local Docker) | ✅ Done |
-| 6.2 | Evidence | Screenshot capture + S3 upload | 6.1 ✅, 2.4 | ⏳ Pending |
-| 6.3 | Evidence | Confidence + novelty scoring | 6.1 ✅, Phase 7 | ⏳ Pending |
+| 6.2 | Evidence | Screenshot capture + S3 upload | 6.1 ✅, 2.4 | ✅ Done |
+| 6.3 | Evidence | Confidence + novelty scoring | 6.1 ✅, Phase 7 | ✅ Done (novelty stub) |
 | 6.4 | Evidence | Evidence list API (paginated, theme filter) | 6.1 ✅ | ✅ Done |
-| 7.1 | Vectors | Nova Multimodal Embeddings client | Phase 1, Bedrock access | ⏳ Pending |
+| 7.1 | Vectors | Nova Multimodal Embeddings client | Phase 1, Bedrock access | ✅ Done |
 | 7.2 | Vectors | Embedding pipeline on evidence ingest | 7.1, 6.1 ✅, 2.5 | ⏳ Pending |
 | 7.3 | Vectors | Semantic clustering endpoint | 7.2 | ⏳ Pending |
 | 7.4 | Vectors | Theme classification (Nova Lite) | 7.3, `lite_client.py` ✅ | ⏳ Pending |
@@ -70,7 +72,7 @@ Your MarketPulse-AI project is essentially a proof of concept for everything Mis
 | 12.2 | Synthesis | Final intelligence synthesis prompt | 4.3, 7.4, 7.5 | ⏳ Pending |
 | 12.3 | Synthesis | Spoken briefing via Sonic | 3.3 ✅, 12.2 | ⏳ Pending |
 
-**Total: 15 tasks — 2 Done, 13 Pending**
+**Total: 15 tasks — 5 Done, 10 Pending**
 
 ---
 
@@ -495,13 +497,13 @@ Your MarketPulse-AI project is essentially a proof of concept for everything Mis
 ## Quick Reference — Files You Own
 
 ```
-backend/evidence/                   ✅ Partial (6.1 + 6.4 done, Session 5)
+backend/evidence/                   ✅ Partial (6.1–6.4 done, Session 7)
   __init__.py                       ✅ Done
-  schemas.py                        ✅ Done
-  repository.py                     ✅ Done
-  router.py                         ✅ Done
-  screenshot.py
-  scoring.py
+  schemas.py                        ✅ Done (added screenshot_base64, screenshot_url, embedding_id)
+  repository.py                     ✅ Done (added update_screenshot_key, update_confidence, update_novelty, update_embedding_id, update_theme, update_theme_batch)
+  router.py                         ✅ Done (confidence scoring wired, screenshot background task, presigned URLs)
+  screenshot.py                     ✅ Done (S3/MinIO upload + presigned GET URLs)
+  scoring.py                        ✅ Done (compute_confidence + compute_novelty stub)
   embedding_pipeline.py
   clustering.py
   theme_labeler.py
@@ -514,5 +516,5 @@ backend/synthesis/
   pre_synthesis.py
   briefing.py
   spoken_briefing.py
-backend/models/embedding_client.py  ⏳ Pending — start here (no deps, unblocks Manav's OpenSearch)
+backend/models/embedding_client.py  ✅ Done — Bedrock Titan Embed Image v1, 1024 dim, multimodal, L2 normalized
 ```
