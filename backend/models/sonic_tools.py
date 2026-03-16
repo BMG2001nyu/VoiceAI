@@ -55,8 +55,8 @@ SONIC_TOOLS: list[dict[str, Any]] = [
         "description": (
             "Check the current status of a running mission: how many agents are active, "
             "how many evidence items have been found, and the overall mission state. "
-            "Call this when the user asks for a progress update or before delivering "
-            "the final briefing."
+            "Call this proactively every few seconds while agents are working so you can "
+            "keep the user informed with brief spoken updates."
         ),
         "parameters": {
             "type": "object",
@@ -73,9 +73,10 @@ SONIC_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "name": "get_new_findings",
         "description": (
-            "Retrieve the most recent evidence findings collected by the browser agents "
-            "so you can narrate them to the user in real time. Call this to give progress "
-            "updates as agents are working, or when the user asks what has been found so far."
+            "Retrieve the most recent evidence findings collected by the browser agents. "
+            "Call this proactively while agents are working to get new discoveries. "
+            "After receiving findings, give the user a brief natural-language summary — "
+            "do NOT read back raw data, URLs, or scores. Synthesize into spoken insights."
         ),
         "parameters": {
             "type": "object",
@@ -181,8 +182,7 @@ SONIC_TOOLS_BEDROCK: list[dict[str, Any]] = [
         "toolSpec": {
             "name": "get_mission_status",
             "description": (
-                "Check the current status of a running mission, including agent count "
-                "and evidence gathered so far."
+                "Check mission status proactively to keep the user updated with brief spoken reports."
             ),
             "inputSchema": {
                 "json": {
@@ -198,7 +198,7 @@ SONIC_TOOLS_BEDROCK: list[dict[str, Any]] = [
     {
         "toolSpec": {
             "name": "get_new_findings",
-            "description": "Retrieve recent evidence findings for narration to the user.",
+            "description": "Retrieve recent evidence findings proactively and summarize them naturally to the user.",
             "inputSchema": {
                 "json": {
                     "type": "object",

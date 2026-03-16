@@ -1,0 +1,43 @@
+[     736ms] [ERROR] In HTML, %s cannot be a descendant of <%s>.
+This will cause a hydration error.%s <button> button 
+
+  <App>
+    <div className="min-h-scre...">
+      <TopBar>
+      <ThreeColumnLayout left={<AgentFleet>} center={<Workbench>} right={<EvidenceBoardV2>} bottom={<CommandBar>} ...>
+        <div className="h-screen w...">
+          <main className="flex-1 fle...">
+            <aside className="w-[300px] ...">
+              <AgentFleet agents={[...]} onStop={function} onReassign={function}>
+                <div className="flex-1 fle...">
+                  <div>
+                  <div>
+                  <div className="flex-1 ove...">
+                    <AgentRow agent={{id:"agent-1", ...}} onStop={function} onReassign={function}>
+                      <ExpandableCard isOpen={false} onToggle={function onToggle} header={<div>} isPulsing={false}>
+                        <div className="group h-fi...">
+>                         <button
+>                           onClick={function onToggle}
+>                           aria-expanded={false}
+>                           className="w-full text-left p-3 flex flex-col gap-2 focus:outline-none focus:ring-1 focus:..."
+>                         >
+                            ...
+                              <div className="w-full">
+                                <div className="flex items...">
+                                  <div>
+                                  <div className="flex items...">
+>                                   <button
+>                                     onClick={function onClick}
+>                                     className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-[9px..."
+>                                   >
+                                    ...
+                                ...
+                          ...
+                    ...
+            ...
+          ...
+      ...
+ @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=554b5b04:2155
+[     736ms] [ERROR] <%s> cannot contain a nested %s.
+See this log for the ancestor stack trace. button <button> @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=554b5b04:2162
+[     863ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0

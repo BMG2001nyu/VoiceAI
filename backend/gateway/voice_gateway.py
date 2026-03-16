@@ -31,8 +31,9 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from config import settings
 from missions import repository as missions_repo
+from missions.router import _demo_task_graph
 from evidence import repository as evidence_repo
-from streaming.channels import publish, publish_timeline_event
+from streaming.channels import events_channel, publish, publish_timeline_event
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,9 @@ try:
 except ImportError:
     SONIC_SYSTEM_PROMPT = (
         "You are the voice of Mission Control. When the user gives you a mission "
-        "objective, immediately call start_mission. Keep spoken responses concise."
+        "objective, immediately call start_mission. Keep the user updated with brief, "
+        "natural spoken progress updates as agents discover things. Speak like a confident "
+        "intelligence briefer — synthesize, don't read raw data."
     )
 
 try:
@@ -79,13 +82,16 @@ async def _handle_tool(
         session_state["mission_id"] = mission_id
 
         try:
-            from models.lite_client import LiteClient
+            if not settings.demo_mode:
+                from models.lite_client import LiteClient
 
-            client = LiteClient(api_key=settings.nova_api_key)
-            task_graph = await client.plan_tasks(objective)
+                client = LiteClient(api_key=settings.nova_api_key)
+                task_graph = await client.plan_tasks(objective)
+            else:
+                task_graph = _demo_task_graph(objective)
         except Exception as exc:
-            logger.error("plan_tasks failed: %s", exc)
-            task_graph = []
+            logger.error("plan_tasks failed: %s — using demo fallback", exc)
+            task_graph = _demo_task_graph(objective)
 
         mission = await missions_repo.set_task_graph(db, mission_id, task_graph)
 
@@ -316,6 +322,104 @@ async def ws_voice(websocket: WebSocket) -> None:
             if not turn_had_events:
                 return
 
+    async def mission_events_to_sonic(session) -> None:
+        """Subscribe to Redis mission events and push them into the Sonic session.
+
+        This is the key mechanism that makes the orchestrator "talk back" to the
+        user. When agents find evidence or change status, the event arrives here
+        via Redis pub/sub, gets formatted into a natural-language prompt, and is
+        injected into the Sonic conversation so Sonic narrates it aloud.
+        """
+        # Wait until a mission has been started (start_mission sets the ID).
+        while session_state.get("mission_id") is None:
+            await asyncio.sleep(0.5)
+
+        mission_id = session_state["mission_id"]
+        channel = events_channel(mission_id)
+
+        # Create a dedicated Redis connection for subscribing (pub/sub requires
+        # its own connection — you cannot reuse the shared publishing client).
+        import redis.asyncio as aioredis
+
+        sub_redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+        pubsub = sub_redis.pubsub()
+        await pubsub.subscribe(channel)
+        logger.info("Voice gateway: subscribed to %s for live narration", channel)
+
+        seen_evidence_ids: set[str] = set()
+
+        try:
+            async for raw_msg in pubsub.listen():
+                if raw_msg["type"] != "message":
+                    continue
+
+                try:
+                    envelope = json.loads(raw_msg["data"])
+                except (json.JSONDecodeError, TypeError):
+                    continue
+
+                event_type = envelope.get("type", "")
+                payload = envelope.get("payload", {})
+
+                # ── EVIDENCE_FOUND → narrate the finding ──────────────────
+                if event_type == "EVIDENCE_FOUND":
+                    eid = payload.get("id", "")
+                    if eid in seen_evidence_ids:
+                        continue
+                    seen_evidence_ids.add(eid)
+
+                    claim = payload.get("claim", "")
+                    theme = payload.get("theme", "")
+                    agent_id = payload.get("agent_id", "an agent")
+                    prompt = (
+                        f"[SYSTEM UPDATE] {agent_id} just found new evidence. "
+                        f"Theme: {theme}. Finding: {claim}. "
+                        f"Tell the user about this discovery in one or two natural sentences. "
+                        f"Do not read the raw data — summarize the insight conversationally."
+                    )
+                    logger.info(
+                        "Pushing evidence to Sonic for narration: %s", claim[:60]
+                    )
+                    await session.send_text(prompt)
+                    await session.trigger_response()
+
+                # ── AGENT_UPDATE → narrate status changes ─────────────────
+                elif event_type == "AGENT_UPDATE":
+                    status = payload.get("status", "")
+                    agent_id = payload.get("agent_id", "an agent")
+                    objective = payload.get("objective", "")
+
+                    if status == "BROWSING":
+                        prompt = (
+                            f"[SYSTEM UPDATE] {agent_id} has started researching: "
+                            f"{objective[:80]}. Briefly tell the user what this agent "
+                            f"is now investigating, in one short sentence."
+                        )
+                        await session.send_text(prompt)
+                        await session.trigger_response()
+
+                # ── MISSION_STATUS with COMPLETE → prompt final briefing ──
+                elif event_type == "MISSION_STATUS":
+                    status = payload.get("status", "")
+                    if status in ("COMPLETE", "SYNTHESIZING"):
+                        prompt = (
+                            "[SYSTEM UPDATE] The mission is wrapping up. All agents "
+                            "have finished. Call get_new_findings to see everything "
+                            "that was collected, then call deliver_final_briefing "
+                            "with a comprehensive spoken summary of all findings."
+                        )
+                        await session.send_text(prompt)
+                        await session.trigger_response()
+
+        except asyncio.CancelledError:
+            pass
+        except Exception as exc:
+            logger.warning("mission_events_to_sonic error: %s", exc)
+        finally:
+            await pubsub.unsubscribe(channel)
+            await sub_redis.aclose()
+            logger.info("Voice gateway: unsubscribed from %s", channel)
+
     try:
         async with client.connect() as session:
             await session.configure(
@@ -326,9 +430,10 @@ async def ws_voice(websocket: WebSocket) -> None:
 
             browser_task = asyncio.create_task(browser_to_sonic(session))
             sonic_task = asyncio.create_task(sonic_to_browser(session))
+            events_task = asyncio.create_task(mission_events_to_sonic(session))
 
             done, pending = await asyncio.wait(
-                {browser_task, sonic_task},
+                {browser_task, sonic_task, events_task},
                 return_when=asyncio.FIRST_COMPLETED,
             )
             for task in pending:

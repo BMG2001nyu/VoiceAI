@@ -14,6 +14,7 @@ import { useLiveMissionStore } from "./store/missionStore";
 import { useMissionWebSocket } from "./hooks/useMissionWebSocket";
 import { MOCK_AGENTS, MOCK_EVIDENCE, MOCK_TIMELINE_EVENTS, MOCK_MISSION } from "./mock/data";
 import { useVoiceCapture } from "./hooks/useVoiceCapture";
+import { useVoiceNarration } from "./hooks/useVoiceNarration";
 import { toast } from "./hooks/useToast";
 import type { Mission } from "./types/mission";
 
@@ -126,6 +127,9 @@ export default function App() {
   const voiceCapture = useVoiceCapture({
     onTranscript: handleSend,
   });
+
+  // Narrate mission events aloud when mic is active
+  useVoiceNarration(isMicActive);
 
   const handleMicToggle = useCallback(() => {
     setIsMicActive(prev => !prev);

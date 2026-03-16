@@ -67,7 +67,7 @@ async def detect_reallocation_opportunities(
             # Find next pending task
             pending = await db.fetch(
                 """
-                SELECT id, objective FROM tasks
+                SELECT id, description FROM tasks
                 WHERE mission_id = $1 AND status = 'PENDING'
                 ORDER BY priority DESC
                 LIMIT 1
@@ -78,7 +78,7 @@ async def detect_reallocation_opportunities(
                 actions.append(
                     RedirectAction(
                         agent_id=agent["id"],
-                        new_objective=pending[0]["objective"],
+                        new_objective=pending[0]["description"],
                         reason=f"Low yield: no evidence for {int(now - last_evidence)}s",
                     )
                 )

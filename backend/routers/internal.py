@@ -1,16 +1,41 @@
-"""Internal endpoints — DLQ monitoring and flush."""
+"""Internal endpoints — DLQ monitoring, flush, and briefing delivery."""
 
 from __future__ import annotations
 
 import logging
 
 from fastapi import APIRouter, Request
+from pydantic import BaseModel
 
 from evidence.dlq import flush_dlq, get_dlq_count, get_dlq_items
+from streaming.channels import publish
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/internal", tags=["internal"])
+
+
+class DeliverBriefingRequest(BaseModel):
+    mission_id: str
+    briefing_text: str
+
+
+@router.post("/deliver-briefing")
+async def deliver_briefing(body: DeliverBriefingRequest, request: Request):
+    """Accept a synthesised briefing and publish it to the mission channel.
+
+    The synthesis pipeline calls this endpoint so that any connected WebSocket
+    client (War Room UI, Voice Gateway) receives the final briefing.
+    """
+    redis = request.app.state.redis
+    await publish(
+        redis,
+        body.mission_id,
+        "BRIEFING_READY",
+        {"mission_id": body.mission_id, "briefing_text": body.briefing_text},
+    )
+    logger.info("Briefing delivered for mission %s via internal endpoint", body.mission_id)
+    return {"status": "accepted", "mission_id": body.mission_id}
 
 
 @router.get("/dlq/count")
