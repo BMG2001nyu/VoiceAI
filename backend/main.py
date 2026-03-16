@@ -4,18 +4,25 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-import asyncpg
-import redis.asyncio as aioredis
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from gateway.ws_relay import router as relay_router
+# Ensure the project root is on sys.path so the `agents` package is importable.
+_PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
-from config import settings
-from evidence.dlq import dlq_worker
-from logging_config import configure_logging
-from metrics import flush as flush_metrics
+import asyncpg  # noqa: E402
+import redis.asyncio as aioredis  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from gateway.ws_relay import router as relay_router  # noqa: E402
+
+from config import settings  # noqa: E402
+from evidence.dlq import dlq_worker  # noqa: E402
+from logging_config import configure_logging  # noqa: E402
+from metrics import flush as flush_metrics  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +40,12 @@ async def lifespan(app: FastAPI):
 
     # Start DLQ background worker for retrying failed evidence ingestion.
     dlq_task = asyncio.create_task(dlq_worker(app.state.redis, app.state.db))
+
+    # Initialize the agent pool in Redis (sets all agents to IDLE).
+    from agents.pool import init_pool
+
+    await init_pool(app.state.redis, settings.agent_pool_size)
+    logger.info("Agent pool initialized (%d agents)", settings.agent_pool_size)
 
     # Initialise X-Ray tracing in non-demo mode.
     if not settings.demo_mode:

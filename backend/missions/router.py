@@ -41,17 +41,21 @@ async def create_mission(
 ) -> MissionResponse:
     """Create a mission, decompose it into tasks via Nova Lite, return the mission."""
     from config import settings
-    from models.lite_client import LiteClient
 
     mission = await repository.create_mission(db, body.objective)
     mission_id = mission["id"]
 
-    try:
-        client = LiteClient(api_key=settings.nova_api_key)
-        task_graph = await client.plan_tasks(body.objective)
-    except Exception as exc:
-        logger.error("plan_tasks failed for mission %s: %s", mission_id, exc)
-        task_graph = []
+    if settings.demo_mode:
+        task_graph = _demo_task_graph(body.objective)
+    else:
+        try:
+            from models.lite_client import LiteClient
+
+            client = LiteClient(api_key=settings.nova_api_key)
+            task_graph = await client.plan_tasks(body.objective)
+        except Exception as exc:
+            logger.error("plan_tasks failed for mission %s: %s", mission_id, exc)
+            task_graph = _demo_task_graph(body.objective)
 
     mission = await repository.set_task_graph(db, mission_id, task_graph)
     await _publish_status_change(redis, mission)
@@ -270,6 +274,48 @@ async def _demo_synthesis(
         logger.warning("Could not publish synthesis timeline event: %s", exc)
 
     return briefing
+
+
+def _demo_task_graph(objective: str) -> list[dict]:
+    """Generate a hardcoded task graph for demo mode (no LLM call)."""
+    return [
+        {
+            "description": f"Search official company websites for {objective}",
+            "agent_type": "OFFICIAL_SITE",
+            "priority": 9,
+            "dependencies": [],
+        },
+        {
+            "description": f"Find recent news and blog posts about {objective}",
+            "agent_type": "NEWS_BLOG",
+            "priority": 8,
+            "dependencies": [],
+        },
+        {
+            "description": f"Scan Reddit and Hacker News for sentiment on {objective}",
+            "agent_type": "REDDIT_HN",
+            "priority": 7,
+            "dependencies": [],
+        },
+        {
+            "description": f"Analyze GitHub repos and technical footprint for {objective}",
+            "agent_type": "GITHUB",
+            "priority": 6,
+            "dependencies": [],
+        },
+        {
+            "description": f"Research financial data and funding history for {objective}",
+            "agent_type": "FINANCIAL",
+            "priority": 7,
+            "dependencies": [],
+        },
+        {
+            "description": f"Find breaking news from last 6 months about {objective}",
+            "agent_type": "RECENT_NEWS",
+            "priority": 8,
+            "dependencies": [],
+        },
+    ]
 
 
 def _fallback_briefing(mission_id: str) -> str:

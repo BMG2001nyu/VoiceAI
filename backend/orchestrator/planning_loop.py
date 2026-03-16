@@ -28,7 +28,7 @@ from streaming.channels import publish_timeline_event
 logger = logging.getLogger(__name__)
 
 # How often the planning loop runs (seconds)
-PLANNING_CYCLE_INTERVAL_SEC = 10
+PLANNING_CYCLE_INTERVAL_SEC = 3 if settings.demo_mode else 10
 
 # Terminal statuses — the loop stops when the mission enters one of these
 _TERMINAL_STATUSES = {"SYNTHESIZING", "COMPLETE", "FAILED", "CANCELLED"}
