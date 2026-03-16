@@ -1,17 +1,21 @@
 import React from "react";
-import { Cpu, Pause, Play, RotateCcw, Share2, Settings, User } from "lucide-react";
+import { Cpu, Pause, Play, RotateCcw, Share2, Settings, User, Radio, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Mission } from "@/types/mission";
 import { toast } from "@/hooks/useToast";
+import type { AppMode } from "@/App";
 
 interface TopBarProps {
     mission: Mission;
     isPaused: boolean;
     onPause: () => void;
     onReset: () => void;
+    mode?: AppMode;
+    onModeToggle?: () => void;
+    isConnected?: boolean;
 }
 
-export function TopBar({ mission, isPaused, onPause, onReset }: TopBarProps) {
+export function TopBar({ mission, isPaused, onPause, onReset, mode = "demo", onModeToggle, isConnected = false }: TopBarProps) {
     const handleShare = () => {
         const url = `${window.location.origin}/mission/${mission.id}`;
         navigator.clipboard.writeText(url).then(() => {
@@ -54,6 +58,35 @@ export function TopBar({ mission, isPaused, onPause, onReset }: TopBarProps) {
                         </div>
                     )}
                 </div>
+
+                <div className="h-4 w-px bg-border mx-1" />
+
+                {/* Mode Toggle */}
+                <button
+                    onClick={onModeToggle}
+                    className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer",
+                        mode === "live"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
+                            : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
+                    )}
+                    title={mode === "demo" ? "Switch to live backend mode" : "Switch to demo mode"}
+                >
+                    {mode === "live" ? <Radio size={10} /> : <Monitor size={10} />}
+                    {mode === "live" ? "LIVE" : "DEMO"}
+                </button>
+
+                {mode === "live" && (
+                    <div className="flex items-center gap-1.5">
+                        <div className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            isConnected ? "bg-emerald-500" : "bg-red-500"
+                        )} />
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                            {isConnected ? "WS OK" : "WS OFF"}
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Center: Mission Info */}

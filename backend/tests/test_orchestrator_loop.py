@@ -242,6 +242,7 @@ async def test_planning_loop_stops_when_should_stop():
         patch("orchestrator.planning_loop.should_stop", side_effect=_mock_should_stop),
         patch("orchestrator.planning_loop.update_mission_status", return_value=mission),
         patch("orchestrator.planning_loop.publish_timeline_event", return_value=None),
+        patch("orchestrator.planning_loop._trigger_synthesis", return_value=None),
         patch("orchestrator.planning_loop.settings", MagicMock(agent_pool_size=6)),
     ):
         await run_planning_loop("test-mission-001", db, redis)
@@ -297,7 +298,8 @@ async def test_planning_loop_assigns_tasks():
         ) as mock_dispatch,
         patch("orchestrator.planning_loop.publish_timeline_event", return_value=None),
         patch("orchestrator.planning_loop.update_mission_status", return_value=mission),
-        patch("orchestrator.planning_loop.settings", MagicMock(agent_pool_size=6)),
+        patch("orchestrator.planning_loop._trigger_synthesis", return_value=None),
+        patch("orchestrator.planning_loop.settings", MagicMock(agent_pool_size=6, demo_mode=False)),
         patch("orchestrator.planning_loop.asyncio.sleep", return_value=None),
     ):
         await run_planning_loop("test-mission-001", db, redis)
@@ -365,6 +367,7 @@ async def test_planning_loop_survives_transient_error():
         patch("orchestrator.planning_loop.should_stop", side_effect=_mock_should_stop),
         patch("orchestrator.planning_loop.update_mission_status", return_value=mission),
         patch("orchestrator.planning_loop.publish_timeline_event", return_value=None),
+        patch("orchestrator.planning_loop._trigger_synthesis", return_value=None),
         patch("orchestrator.planning_loop.settings", MagicMock(agent_pool_size=6)),
         patch("orchestrator.planning_loop.asyncio.sleep", return_value=None),
     ):

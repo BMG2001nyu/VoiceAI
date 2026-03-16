@@ -120,6 +120,9 @@ async def run_planning_loop(
                     await update_mission_status(db, mission_id, "SYNTHESIZING")
                     await _publish_stop_event(redis, mission_id, reason)
                     actions_taken.append(f"STOP: {reason}")
+
+                    # Trigger synthesis pipeline.
+                    await _trigger_synthesis(mission_id, db, redis)
                     break
 
                 # ── 4. Check reallocation triggers ──────────────────────
@@ -155,6 +158,21 @@ async def run_planning_loop(
                 if assignments:
                     dispatched = await dispatch_commands(assignments, redis, mission_id)
                     actions_taken.append(f"ASSIGNED {dispatched} agents")
+
+                    # ── 6b. In demo mode, spawn simulated agents ──────
+                    if settings.demo_mode:
+                        try:
+                            from demo.demo_runner import run_demo_agents_batch
+
+                            await run_demo_agents_batch(
+                                assignments, mission_id, db, redis
+                            )
+                        except Exception as exc:
+                            logger.error(
+                                "Demo runner failed for mission %s: %s",
+                                mission_id,
+                                exc,
+                            )
 
                     # ── 7. Publish timeline events ──────────────────────
                     for action in assignments:
@@ -282,3 +300,100 @@ async def _publish_assign_event(
             },
         },
     )
+
+
+# ── Synthesis trigger ────────────────────────────────────────────────────────
+
+
+async def _trigger_synthesis(
+    mission_id: str,
+    db: asyncpg.Pool,
+    redis: Redis,
+) -> None:
+    """Run the synthesis pipeline after the planning loop stops.
+
+    In demo mode, builds a briefing from DB evidence.
+    In production mode, runs the full synthesis pipeline.
+    """
+    from missions.repository import set_briefing
+    from streaming.channels import publish
+
+    logger.info("Starting synthesis for mission %s", mission_id)
+
+    try:
+        if settings.demo_mode:
+            briefing_text = await _demo_briefing(mission_id, db, redis)
+        else:
+            from synthesis.spoken_briefing import run_synthesis_pipeline
+
+            briefing_text = await run_synthesis_pipeline(mission_id, db, redis)
+    except Exception as exc:
+        logger.error("Synthesis failed for %s: %s", mission_id, exc)
+        briefing_text = (
+            "# Intelligence Briefing\n\n"
+            "Synthesis encountered an error. Please review evidence manually.\n\n"
+            f"Mission ID: {mission_id}"
+        )
+
+    # Store briefing and mark COMPLETE.
+    completed = await set_briefing(db, mission_id, briefing_text)
+
+    # Publish final status.
+    if completed is not None:
+        await publish(redis, mission_id, "MISSION_STATUS", completed)
+
+    # Publish synthesis_complete timeline event.
+    await publish_timeline_event(
+        redis,
+        mission_id,
+        {
+            "id": str(uuid.uuid4()),
+            "type": "synthesis_complete",
+            "description": "Intelligence briefing generated — mission complete",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "payload": {"briefing_length": len(briefing_text)},
+        },
+    )
+
+    logger.info(
+        "Synthesis complete for mission %s (%d chars)", mission_id, len(briefing_text)
+    )
+
+
+async def _demo_briefing(
+    mission_id: str,
+    db: asyncpg.Pool,
+    redis: Redis,
+) -> str:
+    """Generate a briefing from DB evidence in demo mode (no LLM call)."""
+    from evidence.repository import list_evidence
+    from missions.repository import get_mission
+
+    rows = await list_evidence(db, mission_id, limit=50)
+    mission = await get_mission(db, mission_id)
+    objective = mission["objective"] if mission else "Unknown objective"
+
+    themes: dict[str, list[str]] = {}
+    for row in rows:
+        theme = row.get("theme") or "General"
+        themes.setdefault(theme, []).append(row.get("claim", ""))
+
+    lines = [
+        "# Intelligence Briefing\n",
+        f"**Objective:** {objective}\n",
+        "## Executive Summary\n",
+        f"Our research team gathered {len(rows)} evidence items across "
+        f"{len(themes)} themes.\n",
+        "## Key Findings\n",
+    ]
+    for theme, claims in themes.items():
+        lines.append(f"### {theme}")
+        for claim in claims[:3]:
+            lines.append(f"- {claim}")
+        lines.append("")
+
+    lines.append("## Recommendations\n")
+    lines.append("- Validate high-confidence claims with primary sources")
+    lines.append("- Investigate themes with low evidence coverage")
+
+    return "\n".join(lines)

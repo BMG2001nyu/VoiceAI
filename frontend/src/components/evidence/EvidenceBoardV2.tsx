@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Info, LayoutGrid, List } from "lucide-react";
+import { Search, Info, LayoutGrid, List, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Evidence } from "@/types/mission";
 import { EvidenceCardV2 } from "./EvidenceCardV2";
@@ -7,9 +7,11 @@ import { toast } from "@/hooks/useToast";
 
 interface EvidenceBoardProps {
     evidence: Evidence[];
+    onSynthesize?: () => void;
+    isSynthesizing?: boolean;
 }
 
-export function EvidenceBoardV2({ evidence }: EvidenceBoardProps) {
+export function EvidenceBoardV2({ evidence, onSynthesize, isSynthesizing = false }: EvidenceBoardProps) {
     const [activeTab, setActiveTab] = useState<string>("ALL");
     const [viewMode, setViewMode] = useState<"GRID" | "LIST">("LIST");
     const [sortBy, setSortBy] = useState<"NEWEST" | "CONFIDENCE">("NEWEST");
@@ -30,7 +32,11 @@ export function EvidenceBoardV2({ evidence }: EvidenceBoardProps) {
         });
 
     const handleSynthesize = () => {
-        toast.success("Synthesizing intelligence from " + filteredEvidence.length + " findings...");
+        if (onSynthesize) {
+            onSynthesize();
+        } else {
+            toast.success("Synthesizing intelligence from " + filteredEvidence.length + " findings...");
+        }
     };
 
     return (
@@ -117,9 +123,17 @@ export function EvidenceBoardV2({ evidence }: EvidenceBoardProps) {
             <div className="p-4 border-t border-border bg-card/20">
                 <button
                     onClick={handleSynthesize}
-                    className="w-full py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                    disabled={isSynthesizing}
+                    className="w-full py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                    <span>SYNTHESIZE INTELLIGENCE</span>
+                    {isSynthesizing ? (
+                        <>
+                            <Loader2 size={14} className="animate-spin" />
+                            <span>SYNTHESIZING...</span>
+                        </>
+                    ) : (
+                        <span>SYNTHESIZE INTELLIGENCE</span>
+                    )}
                 </button>
             </div>
         </div>

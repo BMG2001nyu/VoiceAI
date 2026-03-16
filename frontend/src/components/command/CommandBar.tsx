@@ -1,20 +1,25 @@
 import React, { useState } from "react";
-import { Mic, Send, Zap, ChevronUp, Terminal } from "lucide-react";
+import { Mic, Send, Zap, ChevronUp, Terminal, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { AppMode } from "@/App";
 
 interface CommandBarProps {
     onSend: (text: string) => void;
     isMicActive: boolean;
     onMicToggle: () => void;
+    isCreating?: boolean;
+    mode?: AppMode;
+    missionActive?: boolean;
 }
 
-export function CommandBar({ onSend, isMicActive, onMicToggle }: CommandBarProps) {
+export function CommandBar({ onSend, isMicActive, onMicToggle, isCreating = false, mode = "demo", missionActive = false }: CommandBarProps) {
     const [input, setInput] = useState("");
     const [isAutopilot, setIsAutopilot] = useState(false);
 
     const handleSend = () => {
         const trimmed = input.trim();
         if (trimmed.length === 0) return;
+        if (isCreating) return;
         onSend(trimmed);
         setInput("");
     };
@@ -26,13 +31,40 @@ export function CommandBar({ onSend, isMicActive, onMicToggle }: CommandBarProps
         }
     };
 
+    const statusLine = (() => {
+        if (mode === "live" && isCreating) {
+            return "Creating mission... deploying agents...";
+        }
+        if (mode === "live" && missionActive) {
+            return "Mission active. Agents working. Type a follow-up command...";
+        }
+        if (mode === "live") {
+            return "LIVE MODE: Type a mission objective to begin...";
+        }
+        return "Mission accepted. Deploying agents to target domains...";
+    })();
+
+    const placeholder = (() => {
+        if (mode === "live" && !missionActive) {
+            return "Describe your research mission objective...";
+        }
+        if (mode === "live" && missionActive) {
+            return "Send a follow-up command to agents...";
+        }
+        return "Assign agent_2 reddit or /focus partner priorities...";
+    })();
+
     return (
         <div className="w-full max-w-4xl px-4 flex flex-col gap-2">
             {/* System Status Line */}
             <div className="flex items-center gap-2 px-4 animate-in fade-in slide-in-from-bottom-1">
-                <Terminal size={10} className="text-primary" />
+                {isCreating ? (
+                    <Loader2 size={10} className="text-primary animate-spin" />
+                ) : (
+                    <Terminal size={10} className="text-primary" />
+                )}
                 <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                    Mission accepted. Deploying agents to target domains...
+                    {statusLine}
                 </span>
             </div>
 
@@ -63,8 +95,9 @@ export function CommandBar({ onSend, isMicActive, onMicToggle }: CommandBarProps
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Assign agent_2 reddit or /focus partner priorities..."
-                            className="w-full bg-transparent border-none py-2 text-sm focus:outline-none placeholder:text-muted-foreground/50 font-medium"
+                            placeholder={placeholder}
+                            disabled={isCreating}
+                            className="w-full bg-transparent border-none py-2 text-sm focus:outline-none placeholder:text-muted-foreground/50 font-medium disabled:opacity-50"
                         />
                     </div>
 
@@ -84,9 +117,10 @@ export function CommandBar({ onSend, isMicActive, onMicToggle }: CommandBarProps
 
                         <button
                             onClick={handleSend}
-                            className="p-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                            disabled={isCreating}
+                            className="p-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                         >
-                            <Send size={18} />
+                            {isCreating ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                         </button>
                     </div>
                 </div>
