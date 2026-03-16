@@ -13,6 +13,7 @@ import { useFocusStore } from "./store/focusStore";
 import { useLiveMissionStore } from "./store/missionStore";
 import { useMissionWebSocket } from "./hooks/useMissionWebSocket";
 import { MOCK_AGENTS, MOCK_EVIDENCE, MOCK_TIMELINE_EVENTS, MOCK_MISSION } from "./mock/data";
+import { useVoiceCapture } from "./hooks/useVoiceCapture";
 import { toast } from "./hooks/useToast";
 import type { Mission } from "./types/mission";
 
@@ -122,9 +123,14 @@ export default function App() {
     }
   }, [mode, liveStore]);
 
+  const voiceCapture = useVoiceCapture({
+    onTranscript: handleSend,
+  });
+
   const handleMicToggle = useCallback(() => {
     setIsMicActive(prev => !prev);
-  }, []);
+    voiceCapture.toggle();
+  }, [voiceCapture]);
 
   const handleSynthesize = useCallback(async () => {
     if (mode === "live" && liveStore.missionId) {

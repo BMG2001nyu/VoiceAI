@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Agent, Evidence, TimelineEvent } from "../types/mission";
+import type { Agent, AgentStep, Evidence, TimelineEvent } from "../types/mission";
 import { createMission as apiCreateMission, synthesizeMission as apiSynthesizeMission } from "../services/api";
 import type { MissionResponse } from "../services/api";
 
@@ -37,13 +37,28 @@ function mapAgentMode(backendStatus: string): Agent["mode"] {
 function mapAgentProgress(backendStatus: string): number {
   switch (backendStatus) {
     case "IDLE":
-      return 0;
+      return 100;
     case "ASSIGNED":
-      return 10;
+      return 15;
     case "BROWSING":
       return 50;
     case "REPORTING":
-      return 80;
+      return 85;
+    default:
+      return 0;
+  }
+}
+
+function mapAgentActivity(backendStatus: string): number {
+  switch (backendStatus) {
+    case "BROWSING":
+      return 0.8;
+    case "REPORTING":
+      return 0.6;
+    case "ASSIGNED":
+      return 0.3;
+    case "IDLE":
+      return 0.1;
     default:
       return 0;
   }
@@ -61,22 +76,39 @@ function agentNameFromId(agentId: string): string {
   return names[agentId] ?? agentId;
 }
 
+interface MappedAgentUpdate extends Partial<Agent> {
+  id: string;
+  backendStatus: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapAgentUpdate(payload: any): Partial<Agent> & { id: string } {
+function mapAgentUpdate(payload: any): MappedAgentUpdate {
   const id = payload.agent_id ?? payload.id ?? "unknown";
-  return {
+  const objective = payload.objective ?? payload.task_description ?? "";
+  const siteUrl = payload.site_url ?? "";
+  const backendStatus: string = payload.status ?? "IDLE";
+
+  const result: MappedAgentUpdate = {
     id,
     name: agentNameFromId(id),
-    status: mapAgentStatus(payload.status),
-    mode: mapAgentMode(payload.status),
-    task: payload.objective ?? "",
-    targetDomain: payload.site_url ?? "",
-    progress: mapAgentProgress(payload.status),
+    status: mapAgentStatus(backendStatus),
+    mode: mapAgentMode(backendStatus),
+    progress: mapAgentProgress(backendStatus),
     lastUpdate: new Date().toISOString(),
-    activity: payload.status === "IDLE" ? 0 : 0.5,
+    activity: mapAgentActivity(backendStatus),
     lastEventTimestamp: new Date().toISOString(),
-    steps: [],
+    backendStatus,
   };
+
+  // Only set task/targetDomain if we have non-empty values
+  if (objective) {
+    result.task = objective;
+  }
+  if (siteUrl) {
+    result.targetDomain = siteUrl;
+  }
+
+  return result;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -240,12 +272,33 @@ export const useLiveMissionStore = create<LiveMissionState>((set, get) => ({
 
   handleAgentUpdate: (payload) => {
     const mapped = mapAgentUpdate(payload);
+    const stepEntry: AgentStep = {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      message: `${mapped.mode ?? "Status change"}: ${mapped.backendStatus}`,
+      type: mapped.backendStatus === "IDLE" ? "success" : "info",
+    };
+
     set((state) => {
       const existing = state.agents.find((a) => a.id === mapped.id);
       if (existing) {
+        // Merge: preserve task/targetDomain if new payload lacks them
+        const merged: Agent = {
+          ...existing,
+          name: mapped.name ?? existing.name,
+          status: mapped.status ?? existing.status,
+          mode: mapped.mode ?? existing.mode,
+          progress: mapped.progress ?? existing.progress,
+          lastUpdate: mapped.lastUpdate ?? existing.lastUpdate,
+          activity: mapped.activity ?? existing.activity,
+          lastEventTimestamp: mapped.lastEventTimestamp ?? existing.lastEventTimestamp,
+          task: mapped.task ?? existing.task,
+          targetDomain: mapped.targetDomain ?? existing.targetDomain,
+          steps: [...existing.steps.slice(-19), stepEntry],
+        };
         return {
           agents: state.agents.map((a) =>
-            a.id === mapped.id ? { ...a, ...mapped } : a
+            a.id === mapped.id ? merged : a
           ),
         };
       }
@@ -259,7 +312,7 @@ export const useLiveMissionStore = create<LiveMissionState>((set, get) => ({
         targetDomain: mapped.targetDomain ?? "",
         progress: mapped.progress ?? 0,
         lastUpdate: mapped.lastUpdate ?? new Date().toISOString(),
-        steps: [],
+        steps: [stepEntry],
         activity: mapped.activity ?? 0,
         lastEventTimestamp: mapped.lastEventTimestamp,
       };

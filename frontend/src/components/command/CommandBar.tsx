@@ -32,6 +32,9 @@ export function CommandBar({ onSend, isMicActive, onMicToggle, isCreating = fals
     };
 
     const statusLine = (() => {
+        if (isMicActive) {
+            return "Listening... speak your command or mission objective";
+        }
         if (mode === "live" && isCreating) {
             return "Creating mission... deploying agents...";
         }
@@ -45,6 +48,9 @@ export function CommandBar({ onSend, isMicActive, onMicToggle, isCreating = fals
     })();
 
     const placeholder = (() => {
+        if (isMicActive) {
+            return "Listening... speak now";
+        }
         if (mode === "live" && !missionActive) {
             return "Describe your research mission objective...";
         }
@@ -58,7 +64,9 @@ export function CommandBar({ onSend, isMicActive, onMicToggle, isCreating = fals
         <div className="w-full max-w-4xl px-4 flex flex-col gap-2">
             {/* System Status Line */}
             <div className="flex items-center gap-2 px-4 animate-in fade-in slide-in-from-bottom-1">
-                {isCreating ? (
+                {isMicActive ? (
+                    <Mic size={10} className="text-red-500 animate-pulse" />
+                ) : isCreating ? (
                     <Loader2 size={10} className="text-primary animate-spin" />
                 ) : (
                     <Terminal size={10} className="text-primary" />
@@ -72,7 +80,12 @@ export function CommandBar({ onSend, isMicActive, onMicToggle, isCreating = fals
             <div className="relative group">
                 <div className="absolute inset-0 bg-primary/5 rounded-2xl blur-xl group-focus-within:bg-primary/10 transition-all" />
 
-                <div className="relative flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-2 shadow-2xl focus-within:border-primary/50 transition-all">
+                <div className={cn(
+                    "relative flex items-center gap-3 bg-card border rounded-xl px-4 py-2 shadow-2xl focus-within:border-primary/50 transition-all",
+                    isMicActive
+                        ? "border-red-500/60 shadow-red-500/20 shadow-lg"
+                        : "border-border"
+                )}>
                     <button
                         onClick={onMicToggle}
                         className={cn(

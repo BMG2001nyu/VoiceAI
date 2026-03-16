@@ -33,6 +33,21 @@ _MOCK_EVIDENCE_PATH = (
 
 _mock_evidence_cache: list[dict[str, Any]] | None = None
 
+# Default site URLs per agent for UI display
+_AGENT_SITE_URLS: dict[str, str] = {
+    "agent_0": "company-website.com",
+    "agent_1": "techcrunch.com",
+    "agent_2": "reddit.com/r/technology",
+    "agent_3": "github.com",
+    "agent_4": "crunchbase.com",
+    "agent_5": "news.google.com",
+}
+
+
+def _agent_site_url(agent_id: str) -> str:
+    """Return a representative site URL for an agent."""
+    return _AGENT_SITE_URLS.get(agent_id, "web-search.ai")
+
 
 def _load_mock_evidence() -> list[dict[str, Any]]:
     """Load and cache mock evidence from the JSON file."""
@@ -77,7 +92,36 @@ async def run_demo_agent(
 
     now_iso = lambda: datetime.now(timezone.utc).isoformat()  # noqa: E731
 
+    # Derive a site_url from the agent_id for UI display
+    site_url = _agent_site_url(agent_id)
+
     try:
+        # ── 0. ASSIGNED ───────────────────────────────────────────────────
+        await update_agent_status(redis, agent_id, "ASSIGNED")
+        await publish_agent_update(
+            redis,
+            mission_id,
+            {
+                "agent_id": agent_id,
+                "status": "ASSIGNED",
+                "objective": task_description,
+                "site_url": site_url,
+                "timestamp": now_iso(),
+            },
+        )
+        await publish_timeline_event(
+            redis,
+            mission_id,
+            {
+                "id": str(uuid.uuid4()),
+                "type": "agent_assigned",
+                "description": f"{agent_id} assigned: {task_description[:80]}",
+                "timestamp": now_iso(),
+                "payload": {"agent_id": agent_id},
+            },
+        )
+        await asyncio.sleep(random.uniform(1.0, 2.0))
+
         # ── 1. BROWSING ──────────────────────────────────────────────────
         await update_agent_status(redis, agent_id, "BROWSING")
         await publish_agent_update(
@@ -86,7 +130,8 @@ async def run_demo_agent(
             {
                 "agent_id": agent_id,
                 "status": "BROWSING",
-                "task_description": task_description,
+                "objective": task_description,
+                "site_url": site_url,
                 "timestamp": now_iso(),
             },
         )
@@ -103,13 +148,16 @@ async def run_demo_agent(
         )
 
         # ── 2. Simulate browsing delay ───────────────────────────────────
-        await asyncio.sleep(random.uniform(2.0, 4.0))
+        await asyncio.sleep(random.uniform(4.0, 8.0))
 
         # ── 3. Pick mock evidence ────────────────────────────────────────
         mock_items = _load_mock_evidence()
         if not mock_items:
             logger.warning("No mock evidence available for %s", agent_id)
-            await _release(redis, agent_id, mission_id, publish_agent_update, now_iso)
+            await _release(
+                redis, agent_id, mission_id, publish_agent_update, now_iso,
+                task_description=task_description, site_url=site_url,
+            )
             return
 
         # Prefer evidence matching this agent_id, fall back to random.
@@ -176,10 +224,12 @@ async def run_demo_agent(
             {
                 "agent_id": agent_id,
                 "status": "REPORTING",
+                "objective": task_description,
+                "site_url": site_url,
                 "timestamp": now_iso(),
             },
         )
-        await asyncio.sleep(random.uniform(0.5, 1.5))
+        await asyncio.sleep(random.uniform(2.0, 3.0))
 
     except asyncio.CancelledError:
         logger.info("Demo agent %s cancelled", agent_id)
@@ -188,7 +238,10 @@ async def run_demo_agent(
         logger.exception("Demo agent %s error", agent_id)
     finally:
         # ── 8. IDLE ──────────────────────────────────────────────────────
-        await _release(redis, agent_id, mission_id, publish_agent_update, now_iso)
+        await _release(
+            redis, agent_id, mission_id, publish_agent_update, now_iso,
+            task_description=task_description, site_url=site_url,
+        )
 
 
 async def _release(
@@ -197,6 +250,8 @@ async def _release(
     mission_id: str,
     publish_agent_update: Any,
     now_iso: Any,
+    task_description: str = "",
+    site_url: str = "",
 ) -> None:
     """Release the agent back to IDLE and publish the update."""
     from agents.pool import release_agent
@@ -209,6 +264,8 @@ async def _release(
             {
                 "agent_id": agent_id,
                 "status": "IDLE",
+                "objective": task_description,
+                "site_url": site_url,
                 "timestamp": now_iso(),
             },
         )
