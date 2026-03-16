@@ -129,7 +129,7 @@ export function useVoiceNarration(enabled: boolean) {
           speak("Mission complete. Here is the briefing.");
           // Split briefing into sentences for natural delivery
           const sentences = state.briefing
-            .replace(/[#*_\-]/g, "")
+            .replace(/[#*_-]/g, "")
             .split(/[.!?]+/)
             .map((s) => s.trim())
             .filter((s) => s.length > 10);

@@ -26,6 +26,9 @@ dependencies = [
     "aws-xray-sdk>=2.12",
 ]
 
+[project.scripts]
+app = "main:app"
+
 [project.optional-dependencies]
 dev = [
     "pytest",

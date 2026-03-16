@@ -59,7 +59,9 @@ def _load_mock_evidence() -> list[dict[str, Any]]:
         raw = _MOCK_EVIDENCE_PATH.read_text(encoding="utf-8")
         _mock_evidence_cache = json.loads(raw)
     except Exception as exc:
-        logger.error("Failed to load mock evidence from %s: %s", _MOCK_EVIDENCE_PATH, exc)
+        logger.error(
+            "Failed to load mock evidence from %s: %s", _MOCK_EVIDENCE_PATH, exc
+        )
         _mock_evidence_cache = []
 
     return _mock_evidence_cache
@@ -184,7 +186,7 @@ def _extract_topic(task_description: str) -> str:
     topic = task_description
     for prefix in prefixes:
         if topic.lower().startswith(prefix.lower()):
-            topic = topic[len(prefix):]
+            topic = topic[len(prefix) :]
             break
     return topic.strip()
 
@@ -200,15 +202,25 @@ def _generate_evidence(
     domain = slug.split("-")[0] + ".com" if slug else "example.com"
     rand_id = str(random.randint(10000000, 99999999))
 
-    templates = _EVIDENCE_TEMPLATES.get(agent_type, _EVIDENCE_TEMPLATES["OFFICIAL_SITE"])
+    templates = _EVIDENCE_TEMPLATES.get(
+        agent_type, _EVIDENCE_TEMPLATES["OFFICIAL_SITE"]
+    )
     template = random.choice(templates)
 
     return {
         "agent_id": agent_id,
-        "claim": template["claim"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
-        "summary": template["summary"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
-        "source_url": template["source_url"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
-        "snippet": template["snippet"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
+        "claim": template["claim"].format(
+            topic=topic, domain=domain, slug=slug, rand_id=rand_id
+        ),
+        "summary": template["summary"].format(
+            topic=topic, domain=domain, slug=slug, rand_id=rand_id
+        ),
+        "source_url": template["source_url"].format(
+            topic=topic, domain=domain, slug=slug, rand_id=rand_id
+        ),
+        "snippet": template["snippet"].format(
+            topic=topic, domain=domain, slug=slug, rand_id=rand_id
+        ),
         "theme": template["theme"],
         "confidence": round(random.uniform(0.65, 0.95), 2),
     }
@@ -379,8 +391,13 @@ async def run_demo_agent(
     finally:
         # ── 8. IDLE ──────────────────────────────────────────────────────
         await _release(
-            redis, agent_id, mission_id, publish_agent_update, now_iso,
-            task_description=task_description, site_url=site_url,
+            redis,
+            agent_id,
+            mission_id,
+            publish_agent_update,
+            now_iso,
+            task_description=task_description,
+            site_url=site_url,
         )
 
 

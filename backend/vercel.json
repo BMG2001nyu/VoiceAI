@@ -1,0 +1,3 @@
+{
+  "buildCommand": "cp -r ../agents . 2>/dev/null || true"
+}

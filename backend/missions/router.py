@@ -199,9 +199,7 @@ def _cancel_loop(mission_id: str) -> None:
         logger.info("Cancelled planning loop for mission %s", mission_id)
 
 
-async def _run_synthesis(
-    mission_id: str, db: asyncpg.Pool, redis: Redis
-) -> str:
+async def _run_synthesis(mission_id: str, db: asyncpg.Pool, redis: Redis) -> str:
     """Run the synthesis pipeline, falling back to a simple briefing on error."""
     from config import settings
 
@@ -217,9 +215,7 @@ async def _run_synthesis(
         return _fallback_briefing(mission_id)
 
 
-async def _demo_synthesis(
-    mission_id: str, db: asyncpg.Pool, redis: Redis
-) -> str:
+async def _demo_synthesis(mission_id: str, db: asyncpg.Pool, redis: Redis) -> str:
     """Generate a demo-mode briefing from evidence already in the DB."""
     from evidence.repository import list_evidence
 

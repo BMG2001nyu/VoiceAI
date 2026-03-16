@@ -32,41 +32,74 @@ async def lifespan(app: FastAPI):
     json_logs = not settings.demo_mode  # Pretty console in demo, JSON in prod
     configure_logging(level=settings.log_level, json_output=json_logs)
 
-    # asyncpg needs a plain postgresql:// DSN (strips SQLAlchemy prefix).
-    dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
-    app.state.db = await asyncpg.create_pool(dsn=dsn, min_size=2, max_size=10)
-    app.state.redis = aioredis.from_url(settings.redis_url, decode_responses=False)
-    logger.info("DB pool and Redis connected")
+    app.state.db = None
+    app.state.redis = None
+    dlq_task = None
 
-    # Start DLQ background worker for retrying failed evidence ingestion.
-    dlq_task = asyncio.create_task(dlq_worker(app.state.redis, app.state.db))
+    # Connect to Postgres (optional on serverless: /health still works if this fails).
+    try:
+        dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        app.state.db = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=5)
+        logger.info("DB pool connected")
+    except Exception as e:
+        logger.warning(
+            "DB pool not available (serverless or missing DATABASE_URL): %s", e
+        )
 
-    # Initialize the agent pool in Redis (sets all agents to IDLE).
-    from agents.pool import init_pool
+    # Connect to Redis (optional on serverless).
+    try:
+        app.state.redis = aioredis.from_url(settings.redis_url, decode_responses=False)
+        await app.state.redis.ping()
+        logger.info("Redis connected")
+    except Exception as e:
+        logger.warning("Redis not available (serverless or missing REDIS_URL): %s", e)
+        app.state.redis = None
 
-    await init_pool(app.state.redis, settings.agent_pool_size)
-    logger.info("Agent pool initialized (%d agents)", settings.agent_pool_size)
+    # Start DLQ worker and init agent pool only when Redis is available.
+    if app.state.redis is not None and app.state.db is not None:
+        dlq_task = asyncio.create_task(dlq_worker(app.state.redis, app.state.db))
+        try:
+            from agents.pool import init_pool
 
-    # Initialise X-Ray tracing in non-demo mode.
+            await init_pool(app.state.redis, settings.agent_pool_size)
+            logger.info("Agent pool initialized (%d agents)", settings.agent_pool_size)
+        except ImportError as e:
+            logger.warning(
+                "Agents package not available (e.g. Vercel deploy from backend/): %s", e
+            )
+        except Exception as e:
+            logger.warning("Agent pool init failed: %s", e)
+
+    # Initialise X-Ray tracing in non-demo mode (skip if it would crash).
     if not settings.demo_mode:
-        from tracing import init_tracing
+        try:
+            from tracing import init_tracing
 
-        init_tracing()
+            init_tracing()
+        except Exception as e:
+            logger.warning("Tracing init skipped: %s", e)
 
     yield
 
     # Flush any remaining buffered CloudWatch metrics on shutdown.
-    await flush_metrics()
-
-    dlq_task.cancel()
     try:
-        await dlq_task
-    except asyncio.CancelledError:
+        await flush_metrics()
+    except Exception:
         pass
 
-    await app.state.db.close()
-    await app.state.redis.aclose()
-    logger.info("DB pool and Redis closed")
+    if dlq_task is not None:
+        dlq_task.cancel()
+        try:
+            await dlq_task
+        except asyncio.CancelledError:
+            pass
+
+    if app.state.db is not None:
+        await app.state.db.close()
+        logger.info("DB pool closed")
+    if app.state.redis is not None:
+        await app.state.redis.aclose()
+        logger.info("Redis closed")
 
 
 app = FastAPI(title="Mission Control", version="0.1.0", lifespan=lifespan)

@@ -34,7 +34,9 @@ async def deliver_briefing(body: DeliverBriefingRequest, request: Request):
         "BRIEFING_READY",
         {"mission_id": body.mission_id, "briefing_text": body.briefing_text},
     )
-    logger.info("Briefing delivered for mission %s via internal endpoint", body.mission_id)
+    logger.info(
+        "Briefing delivered for mission %s via internal endpoint", body.mission_id
+    )
     return {"status": "accepted", "mission_id": body.mission_id}
 
 
