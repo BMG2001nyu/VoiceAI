@@ -65,12 +65,162 @@ def _load_mock_evidence() -> list[dict[str, Any]]:
     return _mock_evidence_cache
 
 
+# ── Dynamic evidence templates (keyed by agent_type) ────────────────────────
+
+_EVIDENCE_TEMPLATES: dict[str, list[dict[str, str]]] = {
+    "OFFICIAL_SITE": [
+        {
+            "claim": "Official documentation highlights {topic} as a key focus area",
+            "summary": "The official website provides detailed information about {topic}, including product features, use cases, and technical specifications.",
+            "source_url": "https://{domain}/about",
+            "snippet": "According to the official site, {topic} represents a significant strategic priority with multiple ongoing initiatives.",
+            "theme": "Product & Strategy",
+        },
+        {
+            "claim": "{topic} has a comprehensive public-facing knowledge base",
+            "summary": "Analysis of the official site reveals extensive documentation, API references, and developer guides related to {topic}.",
+            "source_url": "https://{domain}/docs",
+            "snippet": "The documentation portal includes 200+ pages covering architecture, best practices, and integration guides for {topic}.",
+            "theme": "Technical Documentation",
+        },
+    ],
+    "NEWS_BLOG": [
+        {
+            "claim": "Recent coverage positions {topic} as a market leader in its category",
+            "summary": "TechCrunch and VentureBeat have published multiple articles in the past 3 months covering {topic}'s growth and market impact.",
+            "source_url": "https://techcrunch.com/tag/{slug}",
+            "snippet": "Industry analysts project {topic} will capture significant market share in the coming year based on current trajectory.",
+            "theme": "Market Position",
+        },
+        {
+            "claim": "Blog posts reveal upcoming product roadmap for {topic}",
+            "summary": "Engineering blog posts outline new features and capabilities being developed for {topic}, including performance improvements and new integrations.",
+            "source_url": "https://blog.example.com/{slug}",
+            "snippet": "The engineering team announced three major initiatives related to {topic} expected to ship in the next quarter.",
+            "theme": "Product Roadmap",
+        },
+    ],
+    "REDDIT_HN": [
+        {
+            "claim": "Community sentiment around {topic} is predominantly positive with specific criticisms",
+            "summary": "Analysis of Reddit and Hacker News discussions reveals strong enthusiasm for {topic}, though users cite areas for improvement including pricing and documentation gaps.",
+            "source_url": "https://news.ycombinator.com/item?id={rand_id}",
+            "snippet": "HN user: '{topic} has been a game-changer for our team, though the learning curve was steeper than expected.'",
+            "theme": "Community Sentiment",
+        },
+        {
+            "claim": "Developers report mixed experiences with {topic} adoption",
+            "summary": "Reddit threads in r/programming and r/technology show developers sharing both success stories and challenges when adopting {topic}.",
+            "source_url": "https://reddit.com/r/programming/comments/{rand_id}",
+            "snippet": "Multiple threads discuss best practices for {topic}, with power users offering workarounds for common pain points.",
+            "theme": "Developer Experience",
+        },
+    ],
+    "GITHUB": [
+        {
+            "claim": "{topic} ecosystem shows strong open-source activity with high contributor engagement",
+            "summary": "GitHub analysis reveals active repositories related to {topic} with consistent commit history, growing star counts, and diverse contributor base.",
+            "source_url": "https://github.com/topics/{slug}",
+            "snippet": "Top repositories related to {topic} average 500+ stars and 30+ contributors, with weekly commit activity.",
+            "theme": "Open Source Ecosystem",
+        },
+        {
+            "claim": "Technical analysis shows {topic} code quality and architecture patterns",
+            "summary": "Review of GitHub repositories reveals well-structured codebases with comprehensive test coverage and modern architecture patterns.",
+            "source_url": "https://github.com/search?q={slug}",
+            "snippet": "Code analysis of {topic}-related repos shows 85%+ test coverage and consistent use of CI/CD pipelines.",
+            "theme": "Technical Quality",
+        },
+    ],
+    "FINANCIAL": [
+        {
+            "claim": "{topic} has attracted significant investment and shows strong financial indicators",
+            "summary": "Crunchbase and SEC data reveal substantial funding rounds and financial metrics for {topic}, indicating strong market confidence.",
+            "source_url": "https://crunchbase.com/organization/{slug}",
+            "snippet": "Financial data shows {topic} has raised substantial capital with growing revenue metrics and expanding market presence.",
+            "theme": "Financial Analysis",
+        },
+        {
+            "claim": "Market analysis shows competitive positioning for {topic}",
+            "summary": "Financial reports and market research indicate {topic} is well-positioned against competitors with differentiated offerings.",
+            "source_url": "https://pitchbook.com/profiles/{slug}",
+            "snippet": "Competitive analysis places {topic} in the top tier of its category based on growth rate, retention, and market penetration.",
+            "theme": "Competitive Landscape",
+        },
+    ],
+    "RECENT_NEWS": [
+        {
+            "claim": "Breaking developments show {topic} expanding into new areas",
+            "summary": "Recent news coverage from the past 6 months highlights significant announcements and strategic moves related to {topic}.",
+            "source_url": "https://reuters.com/technology/{slug}",
+            "snippet": "Sources report {topic} is actively expanding its capabilities with new partnerships and product launches announced this quarter.",
+            "theme": "Recent Developments",
+        },
+        {
+            "claim": "Industry trends suggest growing importance of {topic}",
+            "summary": "Recent analyst reports and industry publications project increasing relevance and adoption of {topic} across enterprise markets.",
+            "source_url": "https://bloomberg.com/news/{slug}",
+            "snippet": "Analysts predict {topic} will see accelerated adoption driven by market demand and technological maturation.",
+            "theme": "Industry Trends",
+        },
+    ],
+}
+
+
+def _extract_topic(task_description: str) -> str:
+    """Extract the core topic from a task description."""
+    # Remove common prefixes from the demo task graph
+    prefixes = [
+        "Search official company websites for ",
+        "Find recent news and blog posts about ",
+        "Scan Reddit and Hacker News for sentiment on ",
+        "Analyze GitHub repos and technical footprint for ",
+        "Research financial data and funding history for ",
+        "Find breaking news from last 6 months about ",
+        "Research ",
+        "Investigate ",
+        "Analyze ",
+    ]
+    topic = task_description
+    for prefix in prefixes:
+        if topic.lower().startswith(prefix.lower()):
+            topic = topic[len(prefix):]
+            break
+    return topic.strip()
+
+
+def _generate_evidence(
+    agent_id: str,
+    agent_type: str,
+    task_description: str,
+) -> dict[str, Any]:
+    """Generate a context-aware evidence item based on the actual objective."""
+    topic = _extract_topic(task_description)
+    slug = topic.lower().replace(" ", "-").replace("'", "")[:40]
+    domain = slug.split("-")[0] + ".com" if slug else "example.com"
+    rand_id = str(random.randint(10000000, 99999999))
+
+    templates = _EVIDENCE_TEMPLATES.get(agent_type, _EVIDENCE_TEMPLATES["OFFICIAL_SITE"])
+    template = random.choice(templates)
+
+    return {
+        "agent_id": agent_id,
+        "claim": template["claim"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
+        "summary": template["summary"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
+        "source_url": template["source_url"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
+        "snippet": template["snippet"].format(topic=topic, domain=domain, slug=slug, rand_id=rand_id),
+        "theme": template["theme"],
+        "confidence": round(random.uniform(0.65, 0.95), 2),
+    }
+
+
 async def run_demo_agent(
     agent_id: str,
     task_description: str,
     mission_id: str,
     db: asyncpg.Pool,
     redis: Any,
+    agent_type: str = "OFFICIAL_SITE",
 ) -> None:
     """Simulate a single browser-agent task cycle in demo mode.
 
@@ -80,6 +230,7 @@ async def run_demo_agent(
         mission_id: UUID of the mission.
         db: asyncpg connection pool.
         redis: Redis client.
+        agent_type: Agent type (e.g. OFFICIAL_SITE, NEWS_BLOG).
     """
     from agents.pool import update_agent_status
     from streaming.channels import (
@@ -150,19 +301,8 @@ async def run_demo_agent(
         # ── 2. Simulate browsing delay ───────────────────────────────────
         await asyncio.sleep(random.uniform(4.0, 8.0))
 
-        # ── 3. Pick mock evidence ────────────────────────────────────────
-        mock_items = _load_mock_evidence()
-        if not mock_items:
-            logger.warning("No mock evidence available for %s", agent_id)
-            await _release(
-                redis, agent_id, mission_id, publish_agent_update, now_iso,
-                task_description=task_description, site_url=site_url,
-            )
-            return
-
-        # Prefer evidence matching this agent_id, fall back to random.
-        matching = [e for e in mock_items if e.get("agent_id") == agent_id]
-        evidence_template = random.choice(matching) if matching else random.choice(mock_items)
+        # ── 3. Generate evidence based on actual objective ──────────────
+        evidence_template = _generate_evidence(agent_id, agent_type, task_description)
 
         # ── 4. Insert evidence into DB ───────────────────────────────────
         confidence = compute_confidence(
@@ -299,6 +439,7 @@ async def run_demo_agents_batch(
                 mission_id=mission_id,
                 db=db,
                 redis=redis,
+                agent_type=action.agent_type,
             ),
             name=f"demo:{action.agent_id}:{mission_id[:8]}",
         )
